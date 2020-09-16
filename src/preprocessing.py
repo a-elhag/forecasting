@@ -1,3 +1,11 @@
+"""
+Note:
+     On github, the max size for a document is 100MB, but we want to use the HD5 file type
+     because it is wicked fast. That means, that you have to run this file once to have it set
+     up. Because the output of this code is added to .gitignore
+"""
+
+## ==> Part 0: Setting Up
 ## Part 0a: Loading Data
 import pandas as pd
 import numpy as np
@@ -24,7 +32,8 @@ for _ in range(int(np.ceil(len(df_data.columns)/col_range))):
     idx2 = idx1+col_range
     print(df_data.iloc[:, idx1:idx2].describe())
 
-## Part 1: Fixing Data and Time
+## ==> Part 1: Preprocessing
+## Part 1a: Fixing Data and Time
 df_data['Date'] = pd.to_datetime(df_data['Date'])
 df_data['Time'] = pd.to_datetime(df_data['Time'], format="%H:%M:%S")
 
@@ -41,3 +50,20 @@ df_data = df_data.drop(['Date', 'Time'], axis=1)
 for col in range(6):
     df_data.iloc[:, col] = pd.to_numeric(df_data.iloc[:, col], errors='coerce')
 
+## Part 1c: Removing missing values
+df_data.dropna(axis=0, how='any', inplace=True)
+
+## Part 1d: Splitting into Testing and Training
+Test = df_data['Year'][df_data.Year == 2010].first_valid_index()
+Total = len(df_data)
+# Test/Total = 78 %
+
+df_train = df_data.iloc[:Test, :]
+df_test = df_data.iloc[Test:, :]
+del df_data
+
+## Part 1e: Saving the data
+store = pd.HDFStore('../data/power_clean.h5')
+store['df_train'] = df_train
+store['df_test'] = df_test
+store.close()
