@@ -20,16 +20,20 @@ class ToNumpy(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X, y=None):
-        year = X.dt.year.to_numpy()
-        month = X.dt.month.to_numpy()
-        day = X.dt.day.to_numpy()
-        hour = X.dt.hour.to_numpy()
-        minute = X.dt.minute.to_numpy()
+        X = X.iloc[:, 0]
+        year = X.dt.year.to_numpy().astype(int)
+        month = X.dt.month.to_numpy().astype(int)
+        day = X.dt.day.to_numpy().astype(int)
+        hour = X.dt.hour.to_numpy().astype(int)
+        minute = X.dt.minute.to_numpy().astype(int)
         return np.c_[year, month, day, hour, minute]
 
 ## Part 1c: Putting it all together
-attribs_elec = list(store['df_train'])[:7]
+attribs_Y = list(store['df_train'])[0]
+attribs_Y = [attribs_Y] # This is needed for 1D data
+attribs_elec = list(store['df_train'])[1:7]
 attribs_date = list(store['df_train'])[7]
+attribs_date = [attribs_date]
 
 pipe_elec = Pipeline([
     ('MinMax', MinMaxScaler())
@@ -40,10 +44,10 @@ pipe_date = Pipeline([
 ])
 
 pipe_full = ColumnTransformer([
-    ("elec", pipe_elec, attribs_elec),
+    ("Y", pipe_elec, attribs_Y),
     ("date", pipe_date, attribs_date),
+    ("elec", pipe_elec, attribs_elec),
 ])
 
 np_train = pipe_full.fit_transform(store['df_train'])
-
 ## ==> Part 2
