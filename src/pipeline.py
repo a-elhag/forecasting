@@ -20,7 +20,12 @@ class ToNumpy(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X, y=None):
-        return X.to_numpy().reshape(-1,1)
+        year = X.dt.year.to_numpy()
+        month = X.dt.month.to_numpy()
+        day = X.dt.day.to_numpy()
+        hour = X.dt.hour.to_numpy()
+        minute = X.dt.minute.to_numpy()
+        return np.c_[year, month, day, hour, minute]
 
 ## Part 1c: Putting it all together
 attribs_elec = list(store['df_train'])[:7]
@@ -37,10 +42,8 @@ pipe_date = Pipeline([
 pipe_full = ColumnTransformer([
     ("elec", pipe_elec, attribs_elec),
     ("date", pipe_date, attribs_date),
-],
-remainder = "passthrough")
+])
 
 np_train = pipe_full.fit_transform(store['df_train'])
-np_train.shape
 
 ## ==> Part 2
