@@ -34,32 +34,23 @@ for _ in range(int(np.ceil(len(df_data.columns)/col_range))):
 
 ## ==> Part 1: Preprocessing
 ## Part 1a: Fixing Data and Time
-df_data['Date'] = pd.to_datetime(df_data['Date'])
-df_data['Time'] = pd.to_datetime(df_data['Time'], format="%H:%M:%S")
-
-# df_data['Year'] = [d.year for d in df_data['Date']]
-# df_data['Month'] = [d.month for d in df_data['Date']]
-# df_data['Day'] = [d.day for d in df_data['Date']]
-# 
-# df_data['Hour'] = [d.hour for d in df_data['Time']]
-# df_data['Minute'] = [d.minute for d in df_data['Time']]
-# 
-# df_data = df_data.drop(['Date', 'Time'], axis=1)
+df_data['DateTime'] = pd.to_datetime(df_data.Date + ' ' + df_data.Time, format="%d/%m/%Y %H:%M:%S")
+df_data.drop(['Date', 'Time'], axis=1, inplace=True)
 
 ## Part 1b: Converting Objects to Float
 for col in range(6):
-    df_data.iloc[:, col+2] = pd.to_numeric(df_data.iloc[:, col+2], errors='coerce')
+    df_data.iloc[:, col] = pd.to_numeric(df_data.iloc[:, col], errors='coerce')
 
 ## Part 1c: Removing missing values
 df_data.dropna(axis=0, how='any', inplace=True)
 
 ## Part 1d: Splitting into Testing and Training
-Test = len(df_data[df_data.Date < "2010-01-01"])
+Test = len(df_data[df_data.DateTime < "2010-01-01"])
 Total = len(df_data)
 # Test/Total = 78 %
 
-df_test = df_data[df_data.Date >= "2010-01-01"]
-df_train = df_data[df_data.Date < "2010-01-01"]
+df_test = df_data[df_data.DateTime >= "2010-01-01"]
+df_train = df_data[df_data.DateTime < "2010-01-01"]
 del df_data
 
 ## Part 1e: Saving the data
