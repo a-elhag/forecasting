@@ -1,12 +1,8 @@
 ## ==> Part 0: Loading
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-store = pd.HDFStore('../data/power_clean.h5')
-
-## ==> Part 1: Pipelines
-## Part 1a: Imports
+## Part 1: Pipelines
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
