@@ -22,7 +22,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 
-pipe_electrical = Pipeline([
+
+attribs_elec = list(store['df_train'])[0:7]
+attribs_date = list(store['df_train'])[7:]
+
+pipe_elec = Pipeline([
     ('MinMax', MinMaxScaler())
 ])
 
@@ -31,4 +35,10 @@ pipe_date = Pipeline([
 ])
 
 pipe_full = ColumnTransformer([
-    ("elec", pipe_electrical
+    ("elec", pipe_elec, attribs_elec),
+    ("date", pipe_date, attribs_date),
+])
+
+np_train = pipe_full.fit_transform(store['df_train'])
+np_train.shape
+
