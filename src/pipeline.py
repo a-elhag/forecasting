@@ -20,7 +20,13 @@ class ToNumpy(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X, y=None):
+#         store['df_train']['DateTime'].dt.to_pydatetime()
         X = X.iloc[:, 0]
+
+        weekday =  X.dt.dayofweek.to_numpy()
+        weekday[weekday < 5] = 1 # weekday=1, weekend=0
+        weekday[weekday >=5] = 0
+
         year = X.dt.year.to_numpy().astype(int)
         month = X.dt.month.to_numpy().astype(int)
         day = X.dt.day.to_numpy().astype(int)
@@ -45,9 +51,9 @@ pipe_date = Pipeline([
 
 pipe_full = ColumnTransformer([
     ("Y", pipe_elec, attribs_Y),
-    ("date", pipe_date, attribs_date),
     ("elec", pipe_elec, attribs_elec),
+    ("date", pipe_date, attribs_date),
 ])
 
 np_train = pipe_full.fit_transform(store['df_train'])
-## ==> Part 2
+## ==> Part2
