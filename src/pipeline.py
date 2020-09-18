@@ -1,20 +1,17 @@
 ## ==> Part 0: Loading
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-store = pd.HDFStore('../data/power_clean.h5')
-
-## ==> Part 1: Pipelines
-## Part 1a: Imports
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 
-## Part 1b: Custom Pipes
-class ToNumpy(BaseEstimator, TransformerMixin):
+store = pd.HDFStore('../data/power_clean.h5')
+
+## ==> Part 1: Pipelines
+## Part 1a: Custom Pipes
+class SplitDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
     def fit(self, X, y=None):
@@ -34,7 +31,7 @@ class ToNumpy(BaseEstimator, TransformerMixin):
         minute = X.dt.minute.to_numpy().astype(int)
         return np.c_[year, month, day, hour, minute]
 
-## Part 1c: Putting it all together
+## Part 1b: Putting it all together
 attribs_Y = list(store['df_train'])[0]
 attribs_Y = [attribs_Y] # This is needed for 1D data
 attribs_elec = list(store['df_train'])[1:7]
@@ -42,11 +39,11 @@ attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
 pipe_elec = Pipeline([
-    ('MinMax', MinMaxScaler())
+    ('min-max', MinMaxScaler())
 ])
 
 pipe_date = Pipeline([
-    ('To Numpy', ToNumpy())
+    ('split date', SplitDate())
 ])
 
 pipe_full = ColumnTransformer([
@@ -55,5 +52,29 @@ pipe_full = ColumnTransformer([
     ("date", pipe_date, attribs_date),
 ])
 
-np_train = pipe_full.fit_transform(store['df_train'])
-## ==> Part2
+train_np = pipe_full.fit_transform(store['df_train'])
+test_np = pipe_full.transform(store['df_test'])
+
+train_X = train_np[:, 1:]
+train_y = train_np[:, 0]
+
+test_X = test_np[:, 1:]
+test_y = test_np[:, 0]
+
+store.close()
+## ==> Part2: Models
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+reg_lin = LinearRegression()
+reg_lin.fit(train_X, train_y)
+
+test_y_predict = reg_lin.predict(test_X)
+
+mse_lin = mean_squared_error(test_y, test_y_predict)
+mse_lin = np.sqrt(mse_lin)
+
+pipe_full.named_transformers_['Y'].inverse_transform([[mse_lin]])
+
+## 
+
