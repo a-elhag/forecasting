@@ -1,4 +1,4 @@
-## ==> Part 0: Loading
+## Part 0: Loading
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,8 +9,7 @@ from sklearn.preprocessing import StandardScaler
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-## ==> Part 1: Pipelines
-## Part 1a: Custom Pipes
+## Part 1: Pipes
 class SplitDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
@@ -31,7 +30,18 @@ class SplitDate(BaseEstimator, TransformerMixin):
         minute = X.dt.minute.to_numpy().astype(int)
         return np.c_[year, month, day, hour, minute]
 
-## Part 1b: Putting it all together
+class SlidingWindow(BaseEstimator, TransformerMixin):
+    def __init__(self, size):
+        self.size = size
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        pass
+
+
+
 attribs_Y = list(store['df_train'])[0]
 attribs_Y = [attribs_Y] # This is needed for 1D data
 attribs_elec = list(store['df_train'])[1:7]
@@ -61,7 +71,7 @@ train_y = train_np[:, 0]
 test_X = test_np[:, 1:]
 test_y = test_np[:, 0]
 
-store.close()
+# store.close()
 ## ==> Part2: Models
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -76,5 +86,18 @@ mse_lin = np.sqrt(mse_lin)
 
 pipe_full.named_transformers_['Y'].inverse_transform([[mse_lin]])
 
-## 
+## Part 3: Testing
+def windows(X, window_size):
+    row_output = len(X) - window_size + 1 # Go through all values, except at the very end we only can ge t 1
+    examples = []
 
+    for i in range(row_output):
+        example = X[i:i+window_size]
+        examples.append(np.expand_dims(example, 0))
+
+    return np.vstack(examples)
+
+
+c = ['A','B','C','D','E', 'F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+
+windows(c, 4)

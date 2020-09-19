@@ -15,6 +15,7 @@ ipython = "*"
 jedi = "*"
 neovim = "*"
 tables = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.8"
