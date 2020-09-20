@@ -87,6 +87,8 @@ mse_lin = np.sqrt(mse_lin)
 pipe_full.named_transformers_['Y'].inverse_transform([[mse_lin]])
 
 ## Part 3: Testing
+X = e
+X
 def windows(X, window_size):
     row_output = len(X) - window_size + 1 # Go through all values, except at the very end we only can ge t 1
     examples = []
@@ -98,6 +100,29 @@ def windows(X, window_size):
     return np.vstack(examples)
 
 
+X[i:i+window_size]
 c = ['A','B','C','D','E', 'F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+c = np.array(c)
+c = c.reshape(-1, 1)
+d = np.arange(0, 26)
+d = d.astype(int)
+d = d.reshape(-1, 1)
+d.shape
 
-windows(c, 4)
+e = np.hstack((d, c))
+row_size, col_size = e.shape
+
+window_size = 4
+e[0:row_size-window_size+0]
+e[1:row_size-window_size+1]
+e[2:row_size-window_size+2]
+e[3:row_size-window_size+3]
+e[4:row_size-window_size+4]
+
+f = np.zeros((22,1))
+for i in range(5):
+    f = np.concatenate((f, e[i:row_size-window_size+i]), axis=1)
+
+f = f[:, 1:]
+
+y = c.T
