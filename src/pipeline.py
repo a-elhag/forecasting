@@ -30,7 +30,7 @@ class SplitDate(BaseEstimator, TransformerMixin):
         minute = X.dt.minute.to_numpy().astype(int)
         return np.c_[year, month, day, hour, minute]
 
-class SlidingWindow(BaseEstimator, TransformerMixin):
+class SlidingWindowX(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
         self.window_size = window_size
 
@@ -50,6 +50,21 @@ class SlidingWindow(BaseEstimator, TransformerMixin):
 
         return X_out[:, 1:]
 
+class SlidingWindowY(BaseEstimator, TransformerMixin):
+    def __init__(self, window_size):
+        self.window_size = window_size
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        '''
+        Creates a sliding window over an input that has the shape of
+        (rows, features) for Y
+        '''
+        X = X.iloc[:, 0]
+        X = X.to_numpy().reshape(-1, 1)
+        return X[window_size, :]
 
 
 attribs_Y = list(store['df_train'])[0]
@@ -58,18 +73,20 @@ attribs_elec = list(store['df_train'])[1:7]
 attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
+window_size = 3
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
+    ('window', SlidingWindowY(window_size))
 ])
 
 pipe_elec = Pipeline([
     ('min-max', MinMaxScaler()),
-    ('window', SlidingWindow(3))
+    ('window', SlidingWindowX(window_size))
 ])
 
 pipe_date = Pipeline([
     ('split date', SplitDate()),
-    ('window', SlidingWindow(3))
+    ('window', SlidingWindowX(window_size))
 ])
 
 pipe_full = ColumnTransformer([
@@ -82,7 +99,6 @@ train_np = pipe_full.fit_transform(store['df_train'])
 test_np = pipe_full.transform(store['df_test'])
 
 train_X = train_np[:, 1:]
-train_X[:, 2].shape
 train_y = train_np[:, 0]
 
 test_X = test_np[:, 1:]
