@@ -16,6 +16,7 @@ jedi = "*"
 neovim = "*"
 tables = "*"
 ipykernel = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.8"

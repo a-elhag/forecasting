@@ -62,18 +62,20 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for Y
         '''
-        X = X.iloc[:, 0]
-        X = X.to_numpy().reshape(-1, 1)
-        return X[window_size, :]
+        if not type(X).__module__ == 'numpy':
+            X = X.iloc[:, 0].to_numpy()
+        X = X.reshape(-1, 1)
+        return X[window_size:, :]
 
-
+a = np.arange(0, 9)
+type(a).__module__
 attribs_Y = list(store['df_train'])[0]
 attribs_Y = [attribs_Y] # This is needed for 1D data
 attribs_elec = list(store['df_train'])[1:7]
 attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
-window_size = 3
+window_size = 10
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
@@ -118,4 +120,4 @@ test_y_predict = reg_lin.predict(test_X)
 mse_lin = mean_squared_error(test_y, test_y_predict)
 mse_lin = np.sqrt(mse_lin)
 
-pipe_full.named_transformers_['Y'].inverse_transform([[mse_lin]])
+pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[mse_lin]])
