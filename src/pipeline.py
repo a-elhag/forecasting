@@ -30,6 +30,16 @@ class SplitDate(BaseEstimator, TransformerMixin):
         minute = X.dt.minute.to_numpy().astype(int)
         return np.c_[year, month, day, hour, minute]
 
+class SlidingWindowDate(BaseEstimator, TransformerMixin):
+    def __init__(self, window_size):
+        self.window_size = window_size
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        return X[:-2*self.window_size, :]
+
 class SlidingWindowX(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
         self.window_size = window_size
@@ -71,14 +81,12 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
 
 attribs_Y = list(store['df_train'])[0]
 attribs_Y = [attribs_Y] # This is needed for 1D data
-attribs_elec = list(store['df_train'])[0]
-attribs_elec = [attribs_elec]
+attribs_elec = list(store['df_train'])[0:3]
 attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
-window_size = 60
+window_size = 10
 pipe_Y = Pipeline([
-#     ('min-max', MinMaxScaler()),
     ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
 ])
@@ -90,13 +98,13 @@ pipe_elec = Pipeline([
 
 pipe_date = Pipeline([
     ('split date', SplitDate()),
-    ('window', SlidingWindowX(window_size))
+    ('window', SlidingWindowDate(window_size))
 ])
 
 pipe_full = ColumnTransformer([
     ("Y", pipe_Y, attribs_Y),
     ("elec", pipe_elec, attribs_elec),
-#     ("date", pipe_date, attribs_date),
+    ("date", pipe_date, attribs_date),
 ])
 
 train_np = pipe_full.fit_transform(store['df_train'])
@@ -118,16 +126,13 @@ from sklearn.tree import DecisionTreeRegressor
 
 reg_lin = LinearRegression(copy_X = True)
 reg_lin.fit(train_X, train_y)
-# reg_lin.fit(test_X, test_y)
 
 reg_dt = DecisionTreeRegressor(max_depth=5)
 reg_dt.fit(train_X, train_y)
-# reg_dt.fit(test_X, test_y)
 
 reg_mlp = MLPRegressor(verbose = True, batch_size = 512,
                        max_iter= 10, hidden_layer_sizes=(20, 5))
 reg_mlp.fit(train_X, train_y)
-# reg_mlp.fit(test_X, test_y)
 
 # reg_rf = RandomForestRegressor(n_estimators= 10, min_samples_split= 2,
 #                               min_samples_leaf= 1, verbose = True)
@@ -140,13 +145,16 @@ def model_error(test_X, test_y, train_X, train_y, reg, name):
     train_yhat = reg.predict(train_X)
     mse = mean_squared_error(train_y, train_yhat)
     rmse = np.sqrt(mse)
+    rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
     print(f"{name} Train rmse = {rmse}")
     test_yhat = reg.predict(test_X)
     mse = mean_squared_error(test_y, test_yhat)
     rmse = np.sqrt(mse)
+    rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
     print(f"{name} Test rmse = {rmse}")
 
 model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
 model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
 model_error(test_X, test_y, train_X, train_y, reg_mlp, 'mlp')
 # model_error(test_X, test_y, train_X, train_y, reg_rf)
+
