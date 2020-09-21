@@ -101,7 +101,21 @@ train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
 
 # store.close()
-## ==> Part2: Training Models
+## Part 2: Testing Models
+from sklearn.metrics import mean_squared_error
+test_np = pipe_full.transform(store['df_test'])
+
+test_X = test_np[:, 1:]
+test_y = test_np[:, 0]
+
+def predict(clf, X, y, pipe):
+    yhat = clf.predict(X)
+    mse = mean_squared_error(y, yhat)
+    mse = np.sqrt(mse)
+    mse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[mse]])
+    return mse
+
+## Part 3: Training Models
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
@@ -111,19 +125,5 @@ reg_lin.fit(train_X, train_y)
 clf_dt = DecisionTreeRegressor(max_depth=1)
 clf_dt.fit(train_X, train_y)
 
-## Part 3: Testing Models
-from sklearn.metrics import mean_squared_error
-test_np = pipe_full.transform(store['df_test'])
-
-test_X = test_np[:, 1:]
-test_y = test_np[:, 0]
-
-def predict(clf, X, y):
-
-test_yhat = reg_lin.predict(test_X)
-
-mse_lin = mean_squared_error(test_y, test_yhat)
-mse_lin = np.sqrt(mse_lin)
-pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[mse_lin]])
 
 ##
