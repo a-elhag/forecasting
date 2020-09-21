@@ -73,9 +73,8 @@ attribs_elec = list(store['df_train'])[1:7]
 attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
-window_size = 20
+window_size = 5
 pipe_Y = Pipeline([
-    ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
 ])
 
@@ -108,22 +107,17 @@ test_np = pipe_full.transform(store['df_test'])
 test_X = test_np[:, 1:]
 test_y = test_np[:, 0]
 
-def predict(clf, X, y, pipe):
-    yhat = clf.predict(X)
-    mse = mean_squared_error(y, yhat)
-    mse = np.sqrt(mse)
-    mse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[mse]])
-    return mse
-
 ## Part 3: Training Models
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.neural_network import MLPRegressor
 
 reg_lin = LinearRegression(copy_X = True)
 reg_lin.fit(train_X, train_y)
 
-clf_dt = DecisionTreeRegressor(max_depth=1)
-clf_dt.fit(train_X, train_y)
+reg_dt = DecisionTreeRegressor(max_depth=2)
+reg_dt.fit(train_X, train_y)
 
+reg_mlp = MLPRegressor(verbose = True, max_iter= 25)
+reg_mlp.fit(train_X, train_y)
 
-##
