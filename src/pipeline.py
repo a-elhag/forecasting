@@ -79,6 +79,7 @@ attribs_date = [attribs_date]
 window_size = 60
 pipe_Y = Pipeline([
 #     ('min-max', MinMaxScaler()),
+    ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
 ])
 
@@ -103,55 +104,49 @@ train_np = pipe_full.fit_transform(store['df_train'])
 train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
 
-# store.close()
-
-## Part 2: Training Models
-from sklearn.linear_model import LinearRegression
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.neural_network import MLPRegressor
-
-reg_lin = LinearRegression(copy_X = True)
-reg_lin.fit(train_X, train_y)
-reg_lin.fit(test_X, test_y)
-
-reg_dt = DecisionTreeRegressor(max_depth=2)
-reg_dt.fit(train_X, train_y)
-reg_dt.fit(test_X, test_y)
-
-reg_mlp = MLPRegressor(verbose = True, max_iter= 25)
-reg_mlp.fit(train_X, train_y)
-reg_mlp.fit(test_X, test_y)
-
-## Part 3: Testing Models
-from sklearn.metrics import mean_squared_error
 test_np = pipe_full.transform(store['df_test'])
 
 test_X = test_np[:, 1:]
 test_y = test_np[:, 0]
+# store.close()
 
-test_yhat_lin = reg_lin.predict(test_X)
-mse_lin = mean_squared_error(test_y, test_yhat_lin)
-rmse_lin = np.sqrt(mse_lin)
-print(f" Test rmse_lin = {rmse_lin}")
-train_yhat_lin = reg_lin.predict(train_X)
-mse_lin = mean_squared_error(train_y, train_yhat_lin)
-rmse_lin = np.sqrt(mse_lin)
-print(f" Train rmse_lin = {rmse_lin}")
+## Part 2: Training Models
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.tree import DecisionTreeRegressor
 
-test_yhat_dt = reg_dt.predict(test_X)
-mse_dt = mean_squared_error(test_y, test_yhat_dt)
-rmse_dt = np.sqrt(mse_dt)
-print(f" Test rmse_dt = {rmse_dt}")
-train_yhat_dt = reg_dt.predict(train_X)
-mse_dt = mean_squared_error(train_y, train_yhat_dt)
-rmse_dt = np.sqrt(mse_dt)
-print(f" Train rmse_dt = {rmse_dt}")
+reg_lin = LinearRegression(copy_X = True)
+reg_lin.fit(train_X, train_y)
+# reg_lin.fit(test_X, test_y)
 
-test_yhat_mlp = reg_mlp.predict(test_X)
-mse_mlp = mean_squared_error(test_y, test_yhat_mlp)
-rmse_mlp = np.sqrt(mse_mlp)
-print(f" Test rmse_mlp = {rmse_mlp}")
-train_yhat_mlp = reg_mlp.predict(train_X)
-mse_mlp = mean_squared_error(train_y, train_yhat_mlp)
-rmse_mlp = np.sqrt(mse_mlp)
-print(f" Train rmse_mlp = {rmse_mlp}")
+reg_dt = DecisionTreeRegressor(max_depth=5)
+reg_dt.fit(train_X, train_y)
+# reg_dt.fit(test_X, test_y)
+
+reg_mlp = MLPRegressor(verbose = True, batch_size = 512,
+                       max_iter= 10, hidden_layer_sizes=(20, 5))
+reg_mlp.fit(train_X, train_y)
+# reg_mlp.fit(test_X, test_y)
+
+# reg_rf = RandomForestRegressor(n_estimators= 10, min_samples_split= 2,
+#                               min_samples_leaf= 1, verbose = True)
+# reg_rf.fit(train_X, train_y)
+
+## Part 3: Testing Models
+from sklearn.metrics import mean_squared_error
+
+def model_error(test_X, test_y, train_X, train_y, reg):
+    test_yhat = reg.predict(test_X)
+    mse = mean_squared_error(test_y, test_yhat)
+    rmse = np.sqrt(mse)
+    print(f" Test rmse = {rmse}")
+    train_yhat = reg.predict(train_X)
+    mse = mean_squared_error(train_y, train_yhat)
+    rmse = np.sqrt(mse)
+    print(f" Train rmse = {rmse}")
+
+model_error(test_X, test_y, train_X, train_y, reg_lin)
+model_error(test_X, test_y, train_X, train_y, reg_dt)
+model_error(test_X, test_y, train_X, train_y, reg_mlp)
+# model_error(test_X, test_y, train_X, train_y, reg_rf)
