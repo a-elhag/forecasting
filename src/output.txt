@@ -14,3 +14,14 @@ Training with the TEST
  Train rmse_dt = 0.9339963360070015
  Test rmse_mlp = 0.8040285414815126
  Train rmse_mlp = 0.9060564936035503
+
+
+
+30 
+
+linear Train rmse = [[0.90493926]]
+linear Test rmse = [[0.81354757]]
+decision tree Train rmse = [[0.88600988]]
+decision tree Test rmse = [[0.79743887]]
+mlp Train rmse = [[1.16646768]]
+mlp Test rmse = [[1.00909918]]
