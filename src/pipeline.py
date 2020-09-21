@@ -67,15 +67,13 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         X = X.reshape(-1, 1)
         return X[window_size:, :]
 
-a = np.arange(0, 9)
-type(a).__module__
 attribs_Y = list(store['df_train'])[0]
 attribs_Y = [attribs_Y] # This is needed for 1D data
 attribs_elec = list(store['df_train'])[1:7]
 attribs_date = list(store['df_train'])[7]
 attribs_date = [attribs_date]
 
-window_size = 10
+window_size = 20
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
@@ -98,26 +96,34 @@ pipe_full = ColumnTransformer([
 ])
 
 train_np = pipe_full.fit_transform(store['df_train'])
-test_np = pipe_full.transform(store['df_test'])
 
 train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
 
-test_X = test_np[:, 1:]
-test_X
-test_y = test_np[:, 0]
-
 # store.close()
-## ==> Part2: Models
+## ==> Part2: Training Models
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+from sklearn.tree import DecisionTreeRegressor
 
-reg_lin = LinearRegression()
+reg_lin = LinearRegression(copy_X = True)
 reg_lin.fit(train_X, train_y)
 
-test_y_predict = reg_lin.predict(test_X)
+clf_dt = DecisionTreeRegressor(max_depth=1)
+clf_dt.fit(train_X, train_y)
 
-mse_lin = mean_squared_error(test_y, test_y_predict)
+## Part 3: Testing Models
+from sklearn.metrics import mean_squared_error
+test_np = pipe_full.transform(store['df_test'])
+
+test_X = test_np[:, 1:]
+test_y = test_np[:, 0]
+
+def predict(clf, X, y):
+
+test_yhat = reg_lin.predict(test_X)
+
+mse_lin = mean_squared_error(test_y, test_yhat)
 mse_lin = np.sqrt(mse_lin)
-
 pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[mse_lin]])
+
+##
