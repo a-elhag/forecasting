@@ -136,17 +136,17 @@ reg_mlp.fit(train_X, train_y)
 ## Part 3: Testing Models
 from sklearn.metrics import mean_squared_error
 
-def model_error(test_X, test_y, train_X, train_y, reg):
-    test_yhat = reg.predict(test_X)
-    mse = mean_squared_error(test_y, test_yhat)
-    rmse = np.sqrt(mse)
-    print(f" Test rmse = {rmse}")
+def model_error(test_X, test_y, train_X, train_y, reg, name):
     train_yhat = reg.predict(train_X)
     mse = mean_squared_error(train_y, train_yhat)
     rmse = np.sqrt(mse)
-    print(f" Train rmse = {rmse}")
+    print(f"{name} Train rmse = {rmse}")
+    test_yhat = reg.predict(test_X)
+    mse = mean_squared_error(test_y, test_yhat)
+    rmse = np.sqrt(mse)
+    print(f"{name} Test rmse = {rmse}")
 
-model_error(test_X, test_y, train_X, train_y, reg_lin)
-model_error(test_X, test_y, train_X, train_y, reg_dt)
-model_error(test_X, test_y, train_X, train_y, reg_mlp)
+model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
+model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
+model_error(test_X, test_y, train_X, train_y, reg_mlp, 'mlp')
 # model_error(test_X, test_y, train_X, train_y, reg_rf)
