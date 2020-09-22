@@ -1,6 +1,10 @@
 ## Part 0: Loading
+from batch import BatchData
+
+from datetime import datetime as dt
 import numpy as np
 import pandas as pd
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -10,15 +14,31 @@ from sklearn.preprocessing import StandardScaler
 store = pd.HDFStore('../data/power_clean.h5')
 
 ## Part 1: Pipes
+train_batch = BatchData(store, 'df_train', 100000)
+train_batch.batch(0)
+A = train_batch.data[:, 7]
+
+todate = ToDate()
+todate.transform(A)
+
+## Part 2: Split
+class ToDate(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        X = [X[i].to_pydatetime() for i in range(len(A))]
+        return np.array(X)
+
 class SplitDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
     def fit(self, X, y=None):
         return self
     def transform(self, X, y=None):
-#         store['df_train']['DateTime'].dt.to_pydatetime()
-        X = X.iloc[:, 0]
-
         weekday =  X.dt.dayofweek.to_numpy()
         weekday[weekday < 5] = 1 # weekday=1, weekend=0
         weekday[weekday >=5] = 0
