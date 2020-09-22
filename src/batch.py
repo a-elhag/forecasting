@@ -1,131 +1,21 @@
-## Part11 0: Loading
-import numpy as np
-import pandas as pd
+# import pandas as pd
 
-store = pd.HDFStore('../data/power_clean.h5')
-
-length_df = len(store['df_train'])
-
-## Part 1: Iterator
-class batch_data():
+class BatchData():
     def __init__(self, df_name, range_no):
         self.df_name = df_name
+        self.df_length = len(store[self.df_name])
         self.range_no = range_no
-        self.df_length = len(store([self.df_name]))
-        self.flag_end = False
+        self.max_split = self.df_length//self.range_no
 
     def batch(self, split):
-        self.split = split
-        idx1 = self.split*self.range_no
-        idx2 = (self.split+1)*self.range_no
-        return store[self.df_name].iloc[idx1:idx2, :].to_numpy()
+        idx1 = split*self.range_no
+        idx2 = (split+1)*self.range_no
+        self.data = store[self.df_name].iloc[idx1:idx2, :].to_numpy()
 
-batch_data(500000, 3).shape
+if __name__ == '__main__':
+    store = pd.HDFStore('../data/power_clean.h5')
+    train_batch = BatchData('df_train', 500000)
+    train_batch.batch(0)
 
-## Part 2: Pipes
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler
-
-class SplitDate(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
-    def fit(self, X, y=None):
-        return self
-    def transform(self, X, y=None):
-#         store['df_train']['DateTime'].dt.to_pydatetime()
-        X = X.iloc[:, 0]
-
-        weekday =  X.dt.dayofweek.to_numpy()
-        weekday[weekday < 5] = 1 # weekday=1, weekend=0
-        weekday[weekday >=5] = 0
-
-        year = X.dt.year.to_numpy().astype(int)
-        month = X.dt.month.to_numpy().astype(int)
-        day = X.dt.day.to_numpy().astype(int)
-        hour = X.dt.hour.to_numpy().astype(int)
-        minute = X.dt.minute.to_numpy().astype(int)
-        return np.c_[year, month, day, hour, minute]
-
-class SlidingWindowDate(BaseEstimator, TransformerMixin):
-    def __init__(self, window_size):
-        self.window_size = window_size
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        return X[:-2*self.window_size, :]
-
-class SlidingWindowX(BaseEstimator, TransformerMixin):
-    def __init__(self, window_size):
-        self.window_size = window_size
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        '''
-        Creates a sliding window over an input that has the shape of
-        (rows, features) for X
-        '''
-        row_size = X.shape[0]
-        X_out = np.zeros((row_size-2*self.window_size, 1))
-
-        for i in range(self.window_size):
-            idx1 = i
-            idx2 = row_size-2*self.window_size+i
-            X_out = np.concatenate((X_out, X[idx1:idx2]), axis=1)
-
-        return X_out[:, 1:]
-
-class SlidingWindowY(BaseEstimator, TransformerMixin):
-    def __init__(self, window_size):
-        self.window_size = window_size
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        '''
-        Creates a sliding window over an input that has the shape of
-        (rows, features) for Y
-        '''
-        if not type(X).__module__ == 'numpy':
-            X = X.iloc[:, 0].to_numpy()
-        X = X.reshape(-1, 1)
-        return X[window_size*2:, :]
-
-attribs_Y = list(store['df_train'])[0]
-attribs_Y = [attribs_Y] # This is needed for 1D data
-attribs_elec = list(store['df_train'])[0:3]
-attribs_date = list(store['df_train'])[7]
-attribs_date = [attribs_date]
-
-window_size = 10
-pipe_Y = Pipeline([
-    ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowY(window_size))
-])
-
-pipe_elec = Pipeline([
-    ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowX(window_size))
-])
-
-pipe_date = Pipeline([
-    ('split date', SplitDate()),
-    ('window', SlidingWindowDate(window_size))
-])
-
-pipe_full = ColumnTransformer([
-    ("Y", pipe_Y, attribs_Y),
-    ("elec", pipe_elec, attribs_elec),
-    ("date", pipe_date, attribs_date),
-])
-
-train_np = pipe_full.fit_transform(store['df_train'])
-
-train_X = train_np[:, 1:]
-train_y = train_np[:, 0]
+    test_batch = BatchData('df_test', 500000)
+    test_batch.batch(0)
