@@ -92,39 +92,57 @@ pipe_date = Pipeline([
 pipe_full = ColumnTransformer([
     ("Y", pipe_Y, attribs_Y),
     ("elec", pipe_elec, attribs_elec),
-    ("date", pipe_date, attribs_date),
+#     ("date", pipe_date, attribs_date),
 ])
 
-train_batch = BatchData(store['df_train'], 100000)
+train_batch = BatchData(store['df_train'], 200000)
 train_batch.full()
 pipe_full.fit(train_batch.data)
 
 
 ## Part 3: Simple Reset
-def reset_window_size(window_size):
+def reset_window_size(pipe, window_size):
     """
     Need to do this because sklearn is acting like a *****, will always call 
     fit_transform when you call fit. Thus we set window_size=1 initially and then
     we go CRAZY after it
     """
-    pipe_full.set_params(Y__window__window_size = window_size)
-    pipe_full.set_params(elec__window__window_size = window_size)
-    pipe_full.set_params(date__window__window_size = window_size)
-    pipe_full.named_transformers_['Y']['window'].window_size = window_size
-    pipe_full.named_transformers_['elec']['window'].window_size = window_size
-    pipe_full.named_transformers_['date']['window'].window_size = window_size
+    pipe.set_params(Y__window__window_size = window_size)
+    pipe.set_params(elec__window__window_size = window_size)
+#     pipe.set_params(date__window__window_size = window_size)
+    pipe.named_transformers_['Y']['window'].window_size = window_size
+    pipe.named_transformers_['elec']['window'].window_size = window_size
+#     pipe.named_transformers_['date']['window'].window_size = window_size
+    return pipe
 
 window_size = 60
-reset_window_size(window_size)
+pipe_full = reset_window_size(pipe_full, window_size)
 
 ## Part 4: Applying Pipelines
-train_batch.batch(3)
+train_batch.batch(1)
 train_np = pipe_full.transform(train_batch.data)
+train_batch.data.shape
 
-train_X = train_np[:, 1:7]
+train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
 
 # del train_np, train_X, train_y
+
+## Part 5: Batch Training Models
+from sklearn.linear_model import SGDRegressor
+
+reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
+
+for split in range(train_batch.max_split):
+    print(f"Split: {split} out of {train_batch.max_split}")
+    train_batch.batch(split)
+    train_np = pipe_full.transform(train_batch.data)
+
+    train_X = train_np[:, 1:]
+    train_y = train_np[:, 0]
+
+    for _ in range(3):
+        reg_sgd.partial_fit(train_X, train_y)
 
 ## Part 5: Training Models
 from sklearn.ensemble import RandomForestRegressor
@@ -149,13 +167,21 @@ reg_mlp.fit(train_X, train_y)
 ## Part 3: Testing Models
 from sklearn.metrics import mean_squared_error
 
-test_batch = BatchData(store['df_test'], 500000)
+test_batch = BatchData(store['df_test'], 100000)
 test_batch.batch(0)
 test_np = pipe_full.transform(test_batch.data)
 
-test_X = test_np[:, 1:7]
+test_X = test_np[:, 1:]
 test_y = test_np[:, 0]
 
+test_yhat = reg_sgd.predict(test_X)
+mse = mean_squared_error(test_y, test_yhat)
+rmse = np.sqrt(mse)
+rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
+print(f" SGD Test rmse = {rmse}")
+
+
+## Part Else
 def model_error(test_X, test_y, train_X, train_y, reg, name):
     train_yhat = reg.predict(train_X)
     mse = mean_squared_error(train_y, train_yhat)
