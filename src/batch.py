@@ -1,15 +1,26 @@
 ## Part 0: Loading
 import numpy as np
 import pandas as pd
+
+store = pd.HDFStore('../data/power_clean.h5')
+train_iter = store['df_train'].iterrows()
+
+A = np.array([])
+for _ in range(100):
+    next(train_iter)
+
+A = next(train_iter)[1].to_numpy()
+A = np.vstack((A, next(train_iter)[1].to_numpy()))
+A
+## Part 1: Iterator
+
+
+## Part 1: Pipes
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
 
-store = pd.HDFStore('../data/power_clean.h5')
-
-## Part 1: Pipes
 class SplitDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
@@ -111,10 +122,3 @@ train_np = pipe_full.fit_transform(store['df_train'])
 
 train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
-
-test_np = pipe_full.transform(store['df_test'])
-
-test_X = test_np[:, 1:]
-test_y = test_np[:, 0]
-# store.close()
-
