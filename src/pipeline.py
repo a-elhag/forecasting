@@ -133,7 +133,7 @@ from sklearn.linear_model import SGDRegressor
 
 reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
 
-for split in range(train_batch.max_split):
+for split in range(train_batch.max_split + 1):
     print(f"Split: {split} out of {train_batch.max_split}")
     train_batch.batch(split)
     train_np = pipe_full.transform(train_batch.data)
@@ -164,11 +164,11 @@ reg_mlp.fit(train_X, train_y)
 #                               min_samples_leaf= 1, verbose = True)
 # reg_rf.fit(train_X, train_y)
 
+test_batch = BatchData(store['df_test'], 100000)
 ## Part 3: Testing Models
 from sklearn.metrics import mean_squared_error
 
-test_batch = BatchData(store['df_test'], 100000)
-test_batch.batch(0)
+test_batch.batch(4)
 test_np = pipe_full.transform(test_batch.data)
 
 test_X = test_np[:, 1:]
@@ -179,7 +179,6 @@ mse = mean_squared_error(test_y, test_yhat)
 rmse = np.sqrt(mse)
 rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
 print(f" SGD Test rmse = {rmse}")
-
 
 ## Part Else
 def model_error(test_X, test_y, train_X, train_y, reg, name):
