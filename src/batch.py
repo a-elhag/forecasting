@@ -1,39 +1,18 @@
-## Part 0: Loading
+## Part11 0: Loading
 import numpy as np
 import pandas as pd
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-train_iter = store['df_train'].iterrows()
-
 length_df = len(store['df_train'])
 
-## Part 1a: Iterator
-def batch_data(range_no):
-    A = np.empty((range_no, 9), dtype=object) 
-    flag_end = False
-    for row_no in range(range_no):
-        x = next(train_iter, length_df)
-        if x == length_df:
-            flag_end = True
-            A = A[row_no-1,:]
-            break
-        x_np = x[1].to_numpy().reshape(1, -1)
-        x_idx = x[0]
+## Part 1: Iterator
+def batch_data(range_no, split):
+    idx1 = split*range_no
+    idx2 = (split+1)*range_no
+    return store['df_train'].iloc[idx1:idx2, :].to_numpy()
 
-        A[row_no, 0:8] = x_np
-        A[row_no, 8] = x_idx
-
-    return A, flag_end
-
-A, flag_end = batch_data(500000)
-A
-
-## Part 1b: Iterator
-def batch_data2(range_no, split):
-    pass
-
-
+batch_data(500000, 3).shape
 
 ## Part 2: Pipes
 from sklearn.base import BaseEstimator, TransformerMixin
