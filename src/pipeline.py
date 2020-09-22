@@ -69,7 +69,7 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         X = X.reshape(-1, 1)
         return X[self.window_size*2:, :]
 
-## Part 3: Making pipelines!
+## Part 2: Making pipelines!
 attribs_Y = np.array([0])
 attribs_elec = np.arange(0, 7)
 attribs_date = np.array([7])
@@ -99,27 +99,32 @@ train_batch = BatchData(store['df_train'], 100000)
 train_batch.full()
 pipe_full.fit(train_batch.data)
 
-"""
-Need to do this because sklearn is acting like a *****, will always call 
-fit_transform when you call fit. Thus we set window_size=1 initially and then
-we go CRAZY after it
-"""
+
+## Part 3: Simple Reset
+def reset_window_size(window_size):
+    """
+    Need to do this because sklearn is acting like a *****, will always call 
+    fit_transform when you call fit. Thus we set window_size=1 initially and then
+    we go CRAZY after it
+    """
+    pipe_full.set_params(Y__window__window_size = window_size)
+    pipe_full.set_params(elec__window__window_size = window_size)
+    pipe_full.set_params(date__window__window_size = window_size)
+    pipe_full.named_transformers_['Y']['window'].window_size = window_size
+    pipe_full.named_transformers_['elec']['window'].window_size = window_size
+    pipe_full.named_transformers_['date']['window'].window_size = window_size
 
 window_size = 60
-pipe_full.set_params(Y__window__window_size = window_size)
-pipe_full.set_params(elec__window__window_size = window_size)
-pipe_full.set_params(date__window__window_size = window_size)
+reset_window_size(window_size)
 
-pipe_full.named_transformers_['Y']['window'].window_size = window_size
-pipe_full.named_transformers_['elec']['window'].window_size = window_size
-pipe_full.named_transformers_['date']['window'].window_size = window_size
 ## Part 4: Applying Pipelines
-train_batch.batch(0)
+train_batch.batch(3)
 train_np = pipe_full.transform(train_batch.data)
 
-train_np.shape
 train_X = train_np[:, 1:7]
 train_y = train_np[:, 0]
+
+# del train_np, train_X, train_y
 
 ## Part 5: Training Models
 from sklearn.ensemble import RandomForestRegressor
