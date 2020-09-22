@@ -1,7 +1,6 @@
 ## Part 0: Loading
 from batch import BatchData
 
-from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 
@@ -13,53 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-## Part 1: Pipes
-train_batch = BatchData(store, 'df_train', 100000)
-train_batch.batch(0)
-A = train_batch.data[:, 7]
-
-todate = ToDate()
-todate.transform(A)
-
-## Part 2: Split
-class ToDate(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
-    
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        X = [X[i].to_pydatetime() for i in range(len(A))]
-        return np.array(X)
-
-class SplitDate(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
-    def fit(self, X, y=None):
-        return self
-    def transform(self, X, y=None):
-        weekday =  X.dt.dayofweek.to_numpy()
-        weekday[weekday < 5] = 1 # weekday=1, weekend=0
-        weekday[weekday >=5] = 0
-
-        year = X.dt.year.to_numpy().astype(int)
-        month = X.dt.month.to_numpy().astype(int)
-        day = X.dt.day.to_numpy().astype(int)
-        hour = X.dt.hour.to_numpy().astype(int)
-        minute = X.dt.minute.to_numpy().astype(int)
-        return np.c_[year, month, day, hour, minute]
-
-class SlidingWindowDate(BaseEstimator, TransformerMixin):
-    def __init__(self, window_size):
-        self.window_size = window_size
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        return X[:-2*self.window_size, :]
-
+## Part 0b: Sliding Window X
 class SlidingWindowX(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
         self.window_size = window_size
@@ -72,6 +25,8 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for X
         '''
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
         row_size = X.shape[0]
         X_out = np.zeros((row_size-2*self.window_size, 1))
 
@@ -81,6 +36,37 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
             X_out = np.concatenate((X_out, X[idx1:idx2]), axis=1)
 
         return X_out[:, 1:]
+
+
+train_df = BatchData(store, 'df_train', 15)
+train_df.batch(0)
+A = train_df.data[:, 0:2]
+A.shape
+
+trans_swx = SlidingWindowX(3)
+trans_swx.fit_transform(A)
+
+## Part 1: Split
+class ToDate(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        X = [X[i].to_pydatetime() for i in range(len(A))]
+        return np.array(X)
+
+class SlidingWindowDate(BaseEstimator, TransformerMixin):
+    def __init__(self, window_size):
+        self.window_size = window_size
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        return X[:-2*self.window_size, :]
 
 class SlidingWindowY(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
@@ -117,7 +103,7 @@ pipe_elec = Pipeline([
 ])
 
 pipe_date = Pipeline([
-    ('split date', SplitDate()),
+    ('to date', ToDate()),
     ('window', SlidingWindowDate(window_size))
 ])
 
