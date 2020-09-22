@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-## Part 1: Transformers!
+## Part 1: Creating Transformers!
 class ToDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
@@ -68,7 +68,7 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         X = X.reshape(-1, 1)
         return X[self.window_size*2:, :]
 
-## Part 3: Applying Transformers
+## Part 3: Making pipelines!
 attribs_Y = np.array([0])
 attribs_elec = np.arange(0, 7)
 attribs_date = np.array([7])
@@ -99,19 +99,20 @@ train_batch = BatchData(store['df_train'], 500000)
 train_batch.full()
 pipe_full.fit(train_batch.data)
 
+## Part 4: Applying Pipelines
+train_batch.batch(0)
+train_np = pipe_full.transform(train_batch.data)
 
-## Part 3: Something Else
-train_np = pipe_full.fit_transform(store['df_train'])
-
-train_X = train_np[:, 1:]
+train_X = train_np[:, 1:7]
 train_y = train_np[:, 0]
 
-test_np = pipe_full.transform(store['df_test'])
 
-test_X = test_np[:, 1:]
+test_batch = BatchData(store['df_test'], 500000)
+test_batch.batch(0)
+test_np = pipe_full.transform(test_batch.data)
+
+test_X = test_np[:, 1:7]
 test_y = test_np[:, 0]
-# store.close()
-
 ## Part 2: Training Models
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
