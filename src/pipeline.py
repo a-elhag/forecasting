@@ -12,7 +12,21 @@ from sklearn.preprocessing import StandardScaler
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-## Part 0b: Sliding Window X
+## Part 1: Transformers!
+class ToDate(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        if type(X[0]) == "pandas._libs.tslibs.timestamps.Timestamp":
+            X = [X[i].to_pydatetime() for i in range(len(X))]
+        else:
+            X = [X[i][0].to_pydatetime() for i in range(len(X))]
+        return np.array(X)
+
 class SlidingWindowX(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
         self.window_size = window_size
@@ -39,26 +53,6 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
 
         return X_out[:, 1:]
 
-
-train_df = BatchData(store, 'df_train', 15)
-train_df.batch(0)
-A = train_df.data[:, 0]
-A.shape
-
-trans_swx = SlidingWindowX(3)
-
-## Part 1: Split
-class ToDate(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
-    
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        X = [X[i].to_pydatetime() for i in range(len(A))]
-        return np.array(X)
-
 class SlidingWindowY(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
         self.window_size = window_size
@@ -71,18 +65,15 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for Y
         '''
-        if not type(X).__module__ == 'numpy':
-            X = X.iloc[:, 0].to_numpy()
         X = X.reshape(-1, 1)
-        return X[window_size*2:, :]
+        return X[self.window_size*2:, :]
 
-attribs_Y = list(store['df_train'])[0]
-attribs_Y = [attribs_Y] # This is needed for 1D data
-attribs_elec = list(store['df_train'])[0:3]
-attribs_date = list(store['df_train'])[7]
-attribs_date = [attribs_date]
+## Part 3: Applying Transformers
+attribs_Y = np.array([0])
+attribs_elec = np.arange(0, 7)
+attribs_date = np.array([7])
 
-window_size = 10
+window_size = 3
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
     ('window', SlidingWindowY(window_size))
@@ -95,7 +86,7 @@ pipe_elec = Pipeline([
 
 pipe_date = Pipeline([
     ('to date', ToDate()),
-    ('window', SlidingWindowDate(window_size))
+    ('window', SlidingWindowX(window_size))
 ])
 
 pipe_full = ColumnTransformer([
@@ -104,6 +95,12 @@ pipe_full = ColumnTransformer([
     ("date", pipe_date, attribs_date),
 ])
 
+train_batch = BatchData(store['df_train'], 500000)
+train_batch.full()
+pipe_full.fit(train_batch.data)
+
+
+## Part 3: Something Else
 train_np = pipe_full.fit_transform(store['df_train'])
 
 train_X = train_np[:, 1:]
