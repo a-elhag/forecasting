@@ -13,6 +13,9 @@ class BatchData():
         idx2 = (split+1)*self.range_no
         self.data = self.store[self.df_name].iloc[idx1:idx2, :].to_numpy()
 
+    def full(self):
+        self.data = self.store[self.df_name].iloc[:, :].to_numpy()
+
 if __name__ == '__main__':
     store = pd.HDFStore('../data/power_clean.h5')
     train_batch = BatchData(store, 'df_train', 500000)
