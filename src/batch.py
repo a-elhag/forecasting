@@ -7,10 +7,18 @@ store = pd.HDFStore('../data/power_clean.h5')
 length_df = len(store['df_train'])
 
 ## Part 1: Iterator
-def batch_data(range_no, split):
-    idx1 = split*range_no
-    idx2 = (split+1)*range_no
-    return store['df_train'].iloc[idx1:idx2, :].to_numpy()
+class batch_data():
+    def __init__(self, df_name, range_no):
+        self.df_name = df_name
+        self.range_no = range_no
+        self.df_length = len(store([self.df_name]))
+        self.flag_end = False
+
+    def batch(self, split):
+        self.split = split
+        idx1 = self.split*self.range_no
+        idx2 = (self.split+1)*self.range_no
+        return store[self.df_name].iloc[idx1:idx2, :].to_numpy()
 
 batch_data(500000, 3).shape
 
