@@ -25,7 +25,7 @@ class ToDate(BaseEstimator, TransformerMixin):
             X = [X[i].to_pydatetime() for i in range(len(X))]
         else:
             X = [X[i][0].to_pydatetime() for i in range(len(X))]
-        return np.array(X)
+        return np.array(X).reshape(-1, 1)
 
 class SlidingWindowX(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
@@ -39,6 +39,7 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for X
         '''
+
         if X.ndim == 1:
             X = X.reshape(-1, 1)
 
@@ -73,20 +74,19 @@ attribs_Y = np.array([0])
 attribs_elec = np.arange(0, 7)
 attribs_date = np.array([7])
 
-window_size = 3
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowY(window_size))
+    ('window', SlidingWindowY(2))
 ])
 
 pipe_elec = Pipeline([
     ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowX(window_size))
+    ('window', SlidingWindowX(2))
 ])
 
 pipe_date = Pipeline([
     ('to date', ToDate()),
-    ('window', SlidingWindowX(window_size))
+    ('window', SlidingWindowX(2))
 ])
 
 pipe_full = ColumnTransformer([
@@ -95,25 +95,33 @@ pipe_full = ColumnTransformer([
     ("date", pipe_date, attribs_date),
 ])
 
-train_batch = BatchData(store['df_train'], 500000)
+train_batch = BatchData(store['df_train'], 100000)
 train_batch.full()
 pipe_full.fit(train_batch.data)
 
+"""
+Need to do this because sklearn is acting like a *****, will always call 
+fit_transform when you call fit. Thus we set window_size=1 initially and then
+we go CRAZY after it
+"""
+
+window_size = 60
+pipe_full.set_params(Y__window__window_size = window_size)
+pipe_full.set_params(elec__window__window_size = window_size)
+pipe_full.set_params(date__window__window_size = window_size)
+
+pipe_full.named_transformers_['Y']['window'].window_size = window_size
+pipe_full.named_transformers_['elec']['window'].window_size = window_size
+pipe_full.named_transformers_['date']['window'].window_size = window_size
 ## Part 4: Applying Pipelines
 train_batch.batch(0)
 train_np = pipe_full.transform(train_batch.data)
 
+train_np.shape
 train_X = train_np[:, 1:7]
 train_y = train_np[:, 0]
 
-
-test_batch = BatchData(store['df_test'], 500000)
-test_batch.batch(0)
-test_np = pipe_full.transform(test_batch.data)
-
-test_X = test_np[:, 1:7]
-test_y = test_np[:, 0]
-## Part 2: Training Models
+## Part 5: Training Models
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
@@ -136,6 +144,13 @@ reg_mlp.fit(train_X, train_y)
 ## Part 3: Testing Models
 from sklearn.metrics import mean_squared_error
 
+test_batch = BatchData(store['df_test'], 500000)
+test_batch.batch(0)
+test_np = pipe_full.transform(test_batch.data)
+
+test_X = test_np[:, 1:7]
+test_y = test_np[:, 0]
+
 def model_error(test_X, test_y, train_X, train_y, reg, name):
     train_yhat = reg.predict(train_X)
     mse = mean_squared_error(train_y, train_yhat)
@@ -150,6 +165,6 @@ def model_error(test_X, test_y, train_X, train_y, reg, name):
 
 model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
 model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
-model_error(test_X, test_y, train_X, train_y, reg_mlp, 'mlp')
+model_error(test_X, test_y, train_X, train_y, reg_mlp, 'MLP')
 # model_error(test_X, test_y, train_X, train_y, reg_rf)
 
