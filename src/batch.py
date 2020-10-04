@@ -19,7 +19,7 @@ class BatchData():
         self.data = self.store.iloc[:, :].to_numpy()
 
     def names(self):
-        self.names = list(self.store)
+        return list(self.store)
 
 if __name__ == '__main__':
     store = pd.HDFStore('../data/power_clean.h5')

@@ -12,7 +12,6 @@ from sklearn.preprocessing import StandardScaler
 
 store = pd.HDFStore('../data/power_clean.h5')
 
-## Part 1: Creating Transformers!
 class ToDate(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
@@ -69,32 +68,77 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         X = X.reshape(-1, 1)
         return X[self.window_size*2:, :]
 
-## Part 2: Making pipelines!
-attribs_Y = np.array([0])
-attribs_elec = np.arange(0, 7)
-attribs_date = np.array([7])
+class MyPipeline():
+    def __init__(self, store, range_no):
 
-pipe_Y = Pipeline([
-    ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowY(1))
-])
+        self.store = [store['df_train'], store['df_test']]
+        self.df_length = [len(self.store[0]), len(self.store[1])]
+        self.range_no = range_no
 
-pipe_elec = Pipeline([
-    ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowX(1))
-])
+        self.max_split = [0, 0]
+        self.remain = [0, 0]
+        for _ in range(2):
+            self.max_split[_] = (self.df_length[_]//self.range_no[_] + 1)
+            self.remain[_] = self.df_length[_] - (
+                (self.max_split[_] - 1) * self.range_no[_])
 
-pipe_date = Pipeline([
-    ('to date', ToDate()),
-    ('window', SlidingWindowX(1))
-])
+        self.pipe_setting()
 
-pipe_full = ColumnTransformer([
-    ("Y", pipe_Y, attribs_Y),
-    ("elec", pipe_elec, attribs_elec),
-#     ("date", pipe_date, attribs_date),
-])
 
+    def data_batch(self, split, train_flag = True):
+        if train_flag:
+            idx1 = split*self.range_no[0]
+            idx2 = (split+1)*self.range_no[0]
+            self.data = self.store[0].iloc[idx1:idx2, :].to_numpy()
+        else:
+            idx1 = split*self.range_no[1]
+            idx2 = (split+1)*self.range_no[1]
+            self.data = self.store[1].iloc[idx1:idx2, :].to_numpy()
+
+    def data_full(self, train_flag = True):
+        if train_flag:
+            self.data = self.store[0].iloc[:, :].to_numpy()
+        else:
+            self.data = self.store[1].iloc[:, :].to_numpy()
+
+    def data_names(self):
+        return list(self.store[0])
+
+    def pipe_setting(self):
+
+        self.attribs_Y = np.array([0])
+        self.attribs_elec = np.arange(0, 7)
+        self.attribs_date = np.array([7])
+
+        self.pipe_Y = Pipeline([
+            ('min-max', MinMaxScaler()),
+            ('window', SlidingWindowY(1))
+        ])
+
+        self.pipe_elec = Pipeline([
+            ('min-max', MinMaxScaler()),
+            ('window', SlidingWindowX(1))
+        ])
+
+        self.pipe_date = Pipeline([
+            ('to date', ToDate()),
+            ('window', SlidingWindowX(1))
+        ])
+
+        self.pipe_full = ColumnTransformer([
+            ("Y", self.pipe_Y, self.attribs_Y),
+            ("elec", self.pipe_elec, self.attribs_elec),
+        #     ("date", self.pipe_date, self.attribs_date),
+        ])
+
+
+pipe = MyPipeline(store, [int(2e5), int(1e5)])
+pipe.data_batch(0, False)
+pipe.data.shape
+
+
+
+## Part 2: Something
 train_batch = BatchData(store['df_train'], 200000)
 train_batch.full()
 pipe_full.fit(train_batch.data)
@@ -185,8 +229,4 @@ def model_error(test_X, test_y, train_X, train_y, reg, name):
     rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
     print(f"{name} Test rmse = {rmse}")
 
-# model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
-# model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
-# model_error(test_X, test_y, train_X, train_y, reg_mlp, 'MLP')
-# model_error(test_X, test_y, train_X, train_y, reg_rf)
 
