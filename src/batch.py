@@ -5,7 +5,10 @@ class BatchData():
         self.store = store
         self.df_length = len(self.store)
         self.range_no = range_no
-        self.max_split = self.df_length//self.range_no
+        self.max_split = (self.df_length//self.range_no + 1)
+
+        self.remain = self.df_length - ((self.max_split - 1) * self.range_no)
+
 
     def batch(self, split):
         idx1 = split*self.range_no

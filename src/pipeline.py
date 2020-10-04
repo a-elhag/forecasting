@@ -76,17 +76,17 @@ attribs_date = np.array([7])
 
 pipe_Y = Pipeline([
     ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowY(2))
+    ('window', SlidingWindowY(1))
 ])
 
 pipe_elec = Pipeline([
     ('min-max', MinMaxScaler()),
-    ('window', SlidingWindowX(2))
+    ('window', SlidingWindowX(1))
 ])
 
 pipe_date = Pipeline([
     ('to date', ToDate()),
-    ('window', SlidingWindowX(2))
+    ('window', SlidingWindowX(1))
 ])
 
 pipe_full = ColumnTransformer([
@@ -126,14 +126,12 @@ train_batch.data.shape
 train_X = train_np[:, 1:]
 train_y = train_np[:, 0]
 
-# del train_np, train_X, train_y
-
 ## Part 5: Batch Training Models
 from sklearn.linear_model import SGDRegressor
 
 reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
 
-for split in range(train_batch.max_split + 1):
+for split in range(train_batch.max_split):
     print(f"Split: {split} out of {train_batch.max_split}")
     train_batch.batch(split)
     train_np = pipe_full.transform(train_batch.data)
@@ -141,44 +139,38 @@ for split in range(train_batch.max_split + 1):
     train_X = train_np[:, 1:]
     train_y = train_np[:, 0]
 
-    for _ in range(3):
+    for _ in range(5):
         reg_sgd.partial_fit(train_X, train_y)
 
-## Part 5: Training Models
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
-from sklearn.tree import DecisionTreeRegressor
-
-reg_lin = LinearRegression(copy_X = True)
-reg_lin.fit(train_X, train_y)
-
-reg_dt = DecisionTreeRegressor(max_depth=5)
-reg_dt.fit(train_X, train_y)
-
-reg_mlp = MLPRegressor(verbose = True, batch_size = 512,
-                       max_iter= 10, hidden_layer_sizes=(20, 5))
-reg_mlp.fit(train_X, train_y)
-
-# reg_rf = RandomForestRegressor(n_estimators= 10, min_samples_split= 2,
-#                               min_samples_leaf= 1, verbose = True)
-# reg_rf.fit(train_X, train_y)
-
-test_batch = BatchData(store['df_test'], 100000)
-## Part 3: Testing Models
+## Part 6: Testing Models
 from sklearn.metrics import mean_squared_error
 
-test_batch.batch(4)
-test_np = pipe_full.transform(test_batch.data)
+test_batch = BatchData(store['df_test'], 100000)
+test_batch.df_length
+test_batch.range_no
+test_batch.max_split
+remain = test_batch.df_length - (
+    (test_batch.max_split - 1) * test_batch.range_no)
 
-test_X = test_np[:, 1:]
-test_y = test_np[:, 0]
+rmse_final = 0
+for split in range(test_batch.max_split):
+    print(f"Split: {split}")
+    test_batch.batch(split)
+    test_np = pipe_full.transform(test_batch.data)
 
-test_yhat = reg_sgd.predict(test_X)
-mse = mean_squared_error(test_y, test_yhat)
-rmse = np.sqrt(mse)
-rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
-print(f" SGD Test rmse = {rmse}")
+    test_X = test_np[:, 1:]
+    test_y = test_np[:, 0]
+
+    test_yhat = reg_sgd.predict(test_X)
+    mse = mean_squared_error(test_y, test_yhat)
+    rmse = np.sqrt(mse)
+    rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
+    if split == (test_batch.max_split-1):
+        rmse_final += (rmse[0][0] * remain)/test_batch.df_length
+    else:
+        rmse_final += rmse[0][0] * test_batch.range_no/test_batch.df_length
+
+print(f" SGD Test rmse = {rmse_final}")
 
 ## Part Else
 def model_error(test_X, test_y, train_X, train_y, reg, name):
@@ -193,8 +185,8 @@ def model_error(test_X, test_y, train_X, train_y, reg, name):
     rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
     print(f"{name} Test rmse = {rmse}")
 
-model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
-model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
-model_error(test_X, test_y, train_X, train_y, reg_mlp, 'MLP')
+# model_error(test_X, test_y, train_X, train_y, reg_lin, 'linear')
+# model_error(test_X, test_y, train_X, train_y, reg_dt, 'decision tree')
+# model_error(test_X, test_y, train_X, train_y, reg_mlp, 'MLP')
 # model_error(test_X, test_y, train_X, train_y, reg_rf)
 
