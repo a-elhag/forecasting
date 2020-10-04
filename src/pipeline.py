@@ -1,5 +1,4 @@
 ## Part 0: Loading
-from batch import BatchData
 import numpy as np
 import pandas as pd
 
@@ -8,6 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error
 
 store = pd.HDFStore('../data/power_clean.h5')
 
@@ -176,49 +176,57 @@ class MyPipeline():
         output = self.pipe_full.named_transformers_['Y']['min-max'].inverse_transform(value)
         return output
 
-pipe = MyPipeline(store, [int(1e5), int(1e5)])
-pipe.pre_fit(60)
+    def partial_fit(self, model,flag_complete = True):
+        if flag_complete:
+            length = self.max_split[0]
+        else:
+            length = 1
 
-## Next
-from sklearn.linear_model import SGDRegressor
-from sklearn.metrics import mean_squared_error
-reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
+        for split in range(length):
+            self.data_batch(split)
+            self.pre_transform()
+            model.partial_fit(self.X, self.y)
 
-for split in range(pipe.max_split[0]):
-    pipe.data_batch(split)
-    pipe.pre_transform()
-    reg_sgd.partial_fit(pipe.X, pipe.y)
+        return model
 
-split = 0
-rmse_final = 0
+    def predict(self, model, flag_complete = True):
+        if flag_complete:
+            length = self.max_split[1]
+        else:
+            length = 1
 
-for split in range(pipe.max_split[1]):
-    pipe.data_batch(split, False)
-    pipe.pre_transform()
-    yhat = reg_sgd.predict(pipe.X)
-    mse = mean_squared_error(pipe.y, yhat)
-    rmse = np.sqrt(mse)
-    rmse = pipe.pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
+        rmse_final = 0
+        for split in range(length):
+            self.data_batch(split, False)
+            self.pre_transform()
+            yhat = model.predict(self.X)
+            mse = mean_squared_error(self.y, yhat)
+            rmse = np.sqrt(mse)
+            rmse = self.reverse_minmax(rmse)
 
-    if split != (pipe.max_split[1]-1):
-        rmse_final += rmse[0][0] * pipe.range_no[1]/pipe.df_length[1]
-    else:
-        rmse_final += (rmse[0][0] * pipe.remain[1])/pipe.df_length[1]
+            if split == (self.max_split[1]-1):
+                rmse_final += (rmse[0][0] * self.remain[1])/self.df_length[1]
+            else:
+                rmse_final += rmse[0][0] * self.range_no[1]/self.df_length[1]
 
+        if not flag_complete:
+            rmse_final = rmse_final * self.df_length[1] / self.range_no[1]
 
-print(f" SGD Test rmse = {rmse_final}")
-
-## Part Else
-def model_error(test_X, test_y, train_X, train_y, reg, name):
-    train_yhat = reg.predict(train_X)
-    mse = mean_squared_error(train_y, train_yhat)
-    rmse = np.sqrt(mse)
-    rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
-    print(f"{name} Train rmse = {rmse}")
-    test_yhat = reg.predict(test_X)
-    mse = mean_squared_error(test_y, test_yhat)
-    rmse = np.sqrt(mse)
-    rmse = pipe_full.named_transformers_['Y']['min-max'].inverse_transform([[rmse]])
-    print(f"{name} Test rmse = {rmse}")
+        return rmse_final, yhat
 
 
+
+
+
+## Part 1
+if __name__ == '__main__':
+    from sklearn.linear_model import SGDRegressor
+    reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
+
+    pipe = MyPipeline(store, [int(1e5), int(1e5)])
+    pipe.pre_fit(60)
+
+    reg_sgd = pipe.partial_fit(reg_sgd, flag_complete = False)
+    rmse = pipe.predict(reg_sgd, flag_complete = False)[0]
+
+    print(f" SGD Test rmse = {rmse}")
