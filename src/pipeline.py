@@ -112,6 +112,8 @@ class MyPipeline():
     def pipe_setting(self):
         self.attribs_Y = np.array([0])
         self.attribs_elec = np.arange(0, 7)
+        # Look here, yahoo!
+        self.attribs_elec = np.array([0])
         self.attribs_date = np.array([7])
 
         self.pipe_Y = Pipeline([
@@ -215,18 +217,22 @@ class MyPipeline():
         return rmse_final, yhat
 
 
-
-
-
 ## Part 1
 if __name__ == '__main__':
     from sklearn.linear_model import SGDRegressor
     reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
 
+    # Set batch size for [train, test]
     pipe = MyPipeline(store, [int(1e5), int(1e5)])
+
+    # PreFit the data
     pipe.pre_fit(60)
 
+    # Support for any model with a partial_fit method
+    # flag_complete = False if you only want to test the 
+    # first one
     reg_sgd = pipe.partial_fit(reg_sgd, flag_complete = False)
-    rmse = pipe.predict(reg_sgd, flag_complete = False)[0]
+
+    rmse, yhat = pipe.predict(reg_sgd, flag_complete = False)
 
     print(f" SGD Test rmse = {rmse}")
