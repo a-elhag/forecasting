@@ -40,16 +40,19 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         (rows, features) for X
         '''
 
+        print("We are in X")
+        for _ in range(10):
+            print(_, X[_, 0])
 
         X = pd.DataFrame(X)
         df_X = X.copy()
 
-        for shift in range(1, self.window_size+1):
+        for shift in range(1, self.window_size):
             df_X = pd.concat([df_X, X.shift(-shift)], axis=1)
         
-        X = df_X.dropna().to_numpy()
+        X = df_X.to_numpy()
 
-        return X[:-self.window_size, :]
+        return X[:-self.window_size*2, :]
 
 class SlidingWindowY(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
@@ -220,7 +223,7 @@ class MyPipeline():
 
 pipe = MyPipeline(store, [int(1e5), int(1e5)])
 pipe.data_full()
-pipe.pre_fit(1)
+pipe.pre_fit(3)
 data_out = pipe.pipe_full.transform(pipe.data)
 data_out_Y = data_out[:, 0]
 data_out_x = data_out[:, 1:]
