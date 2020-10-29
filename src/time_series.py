@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 import pipeline
 
@@ -11,11 +12,15 @@ pipe.pre_fit(60)
 data_out = pipe.pipe_full.transform(pipe.data)
 store.close()
 
+print("Finished copying data")
+
 Y = data_out[:, 0].copy()
 df_Y = pd.DataFrame(Y)
-del data_out
 
-print("Finished copying data")
+del data_out
+store.close()
+
+
 ## Part 1: Autocorrelation
 # Hours
 hours = Y.shape[0]//60
@@ -68,4 +73,22 @@ plt.legend(df_Y_ma.columns)
 plt.show()
 plt.savefig("../pics/ma.png")
 
-## Part 3:
+## Part 3: Seasonality Additive
+result = seasonal_decompose(Y_hours, model='additive', period=24*365)
+
+result.plot()
+plt.savefig("../pics/seasonal_year.png")
+plt.show()
+
+a = df_Y.iloc[:, 0] == 0
+
+Y_ma = df_Y_ma.iloc[:, 1].dropna()
+result = seasonal_decompose(Y_ma[::60], model='additive', period=24*365)
+
+result.plot()
+plt.savefig("../pics/seasonal_year_ma.png")
+plt.show()
+
+## Part 4:
+
+## Part 5:
