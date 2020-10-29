@@ -1,24 +1,32 @@
 ## Part 0: Loading
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pipeline
-import matplotlib.pyplot as plt
 
+import pipeline
 
 store = pd.HDFStore('../data/power_clean.h5')
 pipe = pipeline.MyPipeline(store, [int(1e5), int(1e5)])
 pipe.pre_fit(60)
-pipe.data_batch(0)
-pipe.pre_transform()
+data_out = pipe.pipe_full.transform(pipe.data)
+store.close()
 
-## Autocorrelation
-'''
-Slow this down to an average value per hour
-Then plot this
-'''
+Y = data_out[:, 0].copy()
+del data_out
 
-df = pd.DataFrame(pipe.data[:1000, 0])
+## Part 1: Autocorrelation
+days = Y.shape[0]//60
+Y_days = np.zeros((days, 1))
 
-pd.plotting.autocorrelation_plot(df)
+for day in range(days):
+    idx1 = 60*day
+    idx2 = 60*(day+1)
+    Y_days[day] = Y[idx1:idx2].mean()
+
+df_days = pd.DataFrame(Y_days)
+
+pd.plotting.autocorrelation_plot(Y_days)
+plt.title("Autocorrelation of Days")
 plt.show()
 
+## Part 2: 
