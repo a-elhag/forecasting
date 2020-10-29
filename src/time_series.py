@@ -20,6 +20,9 @@ df_Y = pd.DataFrame(Y)
 del data_out
 store.close()
 
+plt.clf()
+plt.plot(Y)
+plt.savefig("../pics/0_original.png")
 
 ## Part 1: Autocorrelation
 # Hours
@@ -89,6 +92,45 @@ result.plot()
 plt.savefig("../pics/seasonal_year_ma.png")
 plt.show()
 
-## Part 4:
+## Part 4: Removing Seasonality
+months = Y_hours.shape[0]//(24*30)
+Y_months = []
 
-## Part 5:
+for month in range(months):
+    idx1 = month*24*30
+    idx2 = (month+1)*24*30
+    Y_months.append(Y_hours[idx1:idx2].mean())
+    
+Y_months = np.array(Y_months)
+
+Y_months_avg = np.zeros(12)
+for month in range(12):
+    Y_months_avg[month] = Y_months[month::12].mean()
+
+Y_hours_noseason = np.zeros(Y_hours.shape[0])
+
+for hour in range(Y_hours.shape[0]):
+    idx_hour = hour%8760
+    idx_month = np.floor(idx_hour/(24*30.5))
+    idx_month = int(idx_month)
+
+    Y_hours_noseason[hour] = Y_hours[hour] - Y_months_avg[idx_month]
+
+plt.plot(Y_hours_noseason)
+plt.savefig("../pics/seasonality_no.png")
+
+## Part 5: AR
+from statsmodels.tsa.ar_model import AR
+
+model = AR(Y_hours)
+model_fit = model.fit()
+lag = model_fit.k_ar #lag
+param = model_fit.params
+
+Y_hours.shape[0] -48
+Y_hours_pred = model_fit.predict(dynamic=False)
+
+rmse_ar = ((Y_hours[48:]- Y_hours_pred)**2).mean()
+
+plt.plot(Y_hours[48:], Y_hours_pred)
+plt.show()
