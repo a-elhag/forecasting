@@ -9,6 +9,7 @@ from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import LSTM
 
+
 store = pd.HDFStore('../data/power_clean.h5')
 pipe = pipeline.MyPipeline(store, [int(1e5), int(1e5)])
 pipe.pre_fit(60)
