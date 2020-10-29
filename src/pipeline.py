@@ -40,10 +40,6 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         (rows, features) for X
         '''
 
-        print("We are in X")
-        for _ in range(10):
-            print(_, X[_, 0])
-
         X = pd.DataFrame(X)
         df_X = X.copy()
 
@@ -227,10 +223,6 @@ pipe.pre_fit(3)
 data_out = pipe.pipe_full.transform(pipe.data)
 data_out_Y = data_out[:, 0]
 data_out_x = data_out[:, 1:]
-
-for row in range(6):
-    print(row, data_out[row, :])
-
 
 ## Part 1
 if __name__ == '__main__':
