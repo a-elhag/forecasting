@@ -10,8 +10,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 
 store = pd.HDFStore('../data/power_clean.h5')
-df_train = store['df_train']
-df_train.iloc[:, 0].shift(-2)
 
 class ToDate(BaseEstimator, TransformerMixin):
     def __init__(self):
@@ -217,29 +215,10 @@ class MyPipeline():
 
         return rmse_final, yhat
 
-pipe = MyPipeline(store, [int(1e5), int(1e5)])
-pipe.data_full()
-pipe.pre_fit(3)
-data_out = pipe.pipe_full.transform(pipe.data)
-data_out_Y = data_out[:, 0]
-data_out_x = data_out[:, 1:]
-
 ## Part 1
 if __name__ == '__main__':
-    from sklearn.linear_model import SGDRegressor
-    reg_sgd = SGDRegressor(verbose = 1, shuffle = False)
-
-    # Set batch size for [train, test]
     pipe = MyPipeline(store, [int(1e5), int(1e5)])
-
-    # PreFit the data
+    pipe.data_full()
     pipe.pre_fit(60)
-
-    # Support for any model with a partial_fit method
-    # flag_complete = False if you only want to test the 
-    # first one
-    reg_sgd = pipe.partial_fit(reg_sgd, flag_complete = False)
-
-    rmse, yhat = pipe.predict(reg_sgd, flag_complete = False)
-
-    print(f" SGD Test rmse = {rmse}")
+    data_out = pipe.pipe_full.transform(pipe.data)
+    store.close()
