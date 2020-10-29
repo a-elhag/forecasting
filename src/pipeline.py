@@ -220,10 +220,13 @@ class MyPipeline():
 
 pipe = MyPipeline(store, [int(1e5), int(1e5)])
 pipe.data_full()
-pipe.pre_fit(3)
+pipe.pre_fit(1)
 data_out = pipe.pipe_full.transform(pipe.data)
 data_out_Y = data_out[:, 0]
 data_out_x = data_out[:, 1:]
+
+for row in range(6):
+    print(row, data_out[row, :])
 
 
 ## Part 1
