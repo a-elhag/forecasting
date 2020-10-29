@@ -40,22 +40,16 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         (rows, features) for X
         '''
 
-        print("We are in slidingWindowX")
-        print(type(X))
 
-        if X.ndim == 1:
-            X = X.reshape(-1, 1)
+        X = pd.DataFrame(X)
+        df_X = X.copy()
 
-        row_size = X.shape[0]
-        X_out = np.zeros((row_size-2*self.window_size, 1))
+        for shift in range(1, self.window_size+1):
+            df_X = pd.concat([df_X, X.shift(-shift)], axis=1)
+        
+        X = df_X.dropna().to_numpy()
 
-        for j in range(X.shape[1]):
-            for i in range(self.window_size):
-                idx1 = i
-                idx2 = row_size-2*self.window_size+i
-                X_out = np.concatenate((X_out, X[idx1:idx2, j].reshape(-1, 1)), axis=1)
-
-        return X_out[:, 1:]
+        return X[:-self.window_size, :]
 
 class SlidingWindowY(BaseEstimator, TransformerMixin):
     def __init__(self, window_size):
@@ -69,11 +63,11 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for Y
         '''
-        print("We are in sliding WindowY")
+        X = pd.DataFrame(X)
+        X = X.shift(-self.window_size*2)
+        X = X.dropna().to_numpy()
 
-
-        X = X.reshape(-1, 1)
-        return X[self.window_size*2:, :]
+        return X
 
 class MyPipeline():
     def __init__(self, store, range_no):
@@ -224,13 +218,13 @@ class MyPipeline():
 
         return rmse_final, yhat
 
-## Part 0: Testing
 pipe = MyPipeline(store, [int(1e5), int(1e5)])
 pipe.data_full()
-pipe.pre_fit(2)
+pipe.pre_fit(3)
 data_out = pipe.pipe_full.transform(pipe.data)
 data_out_Y = data_out[:, 0]
 data_out_x = data_out[:, 1:]
+
 
 ## Part 1
 if __name__ == '__main__':
