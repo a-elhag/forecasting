@@ -150,4 +150,10 @@ rmse_ar = ((Y_hours_output-predictions)**2).mean()**0.5
 rmse_ar = pipe.reverse_minmax(rmse_ar)[0][0]
 print(f"rmse_ma = ", rmse_ar)
 
+## Part 6: ARMA
+from statsmodels.tsa.arima_model import ARIMA
 
+model = ARIMA(Y_hours, order=(5, 0, 1))
+model_fit = model.fit(disp=0)
+
+print(model_fit.summary())
