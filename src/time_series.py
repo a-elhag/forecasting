@@ -73,7 +73,6 @@ plt.clf()
 plt.plot(df_Y_ma.iloc[10000:60*24*5+10000, :].dropna())
 plt.title("Moving Average Prediction 5 days")
 plt.legend(df_Y_ma.columns)
-plt.show()
 plt.savefig("../pics/2_ma.png")
 
 ## Part 3: Seasonality Additive
