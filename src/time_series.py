@@ -12,6 +12,7 @@ data_out = pipe.pipe_full.transform(pipe.data)
 store.close()
 
 Y = data_out[:, 0].copy()
+df_Y = pd.DataFrame(Y)
 del data_out
 
 print("Finished copying data")
@@ -45,4 +46,23 @@ pd.plotting.autocorrelation_plot(Y_days)
 plt.title("Autocorrelation of Days")
 plt.savefig("../pics/ac_days.png")
 
-## Part 2: 
+## Part 2: Moving Average
+df_Y_window = df_Y.rolling(window=60)
+
+df_Y_ma = pd.concat([df_Y, df_Y_window.mean()], axis=1)
+df_Y_ma.columns = (["original", "window=60"])
+
+# Plotting
+plt.clf()
+plt.plot(df_Y.iloc[:60*24*5, :].dropna())
+plt.legend(df_Y.columns)
+plt.savefig("../pics/ma.png")
+
+# RMSE
+df_Y_ma.iloc[:, 0] = df_Y_ma.iloc[:, 0].shift(-60)
+Y_ma = df_Y_ma.dropna().to_numpy()
+rmse_ma = ((Y_ma[:, 0] - Y_ma[:, 1])**2).mean()**0.5
+rmse_ma = pipe.reverse_minmax(rmse_ma)[0][0]
+print(f"rmse_ma = ", rmse_ma)
+
+## Part 3:
