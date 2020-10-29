@@ -37,7 +37,7 @@ for hour in range(hours):
 plt.clf()
 pd.plotting.autocorrelation_plot(Y_hours)
 plt.title("Autocorrelation of Hours")
-plt.savefig("../pics/ac_hours.png")
+plt.savefig("../pics/1_ac_hours.png")
 
 # Days
 days = Y.shape[0]//(60*24)
@@ -52,7 +52,7 @@ for day in range(days):
 plt.clf()
 pd.plotting.autocorrelation_plot(Y_days)
 plt.title("Autocorrelation of Days")
-plt.savefig("../pics/ac_days.png")
+plt.savefig("../pics/1_ac_days.png")
 
 ## Part 2: Moving Average
 window_size = 60
@@ -70,17 +70,17 @@ print(f"rmse_ma = ", rmse_ma)
 
 # Plotting
 plt.clf()
-plt.plot(df_Y_ma.iloc[:60*24*5, :].dropna())
+plt.plot(df_Y_ma.iloc[10000:60*24*5+10000, :].dropna())
 plt.title("Moving Average Prediction 5 days")
 plt.legend(df_Y_ma.columns)
 plt.show()
-plt.savefig("../pics/ma.png")
+plt.savefig("../pics/2_ma.png")
 
 ## Part 3: Seasonality Additive
 result = seasonal_decompose(Y_hours, model='additive', period=24*365)
 
 result.plot()
-plt.savefig("../pics/seasonal_year.png")
+plt.savefig("../pics/3_seasonal_year.png")
 plt.show()
 
 a = df_Y.iloc[:, 0] == 0
@@ -89,7 +89,7 @@ Y_ma = df_Y_ma.iloc[:, 1].dropna()
 result = seasonal_decompose(Y_ma[::60], model='additive', period=24*365)
 
 result.plot()
-plt.savefig("../pics/seasonal_year_ma.png")
+plt.savefig("../pics/3_seasonal_year_ma.png")
 plt.show()
 
 ## Part 4: Removing Seasonality
@@ -117,7 +117,7 @@ for hour in range(Y_hours.shape[0]):
     Y_hours_noseason[hour] = Y_hours[hour] - Y_months_avg[idx_month]
 
 plt.plot(Y_hours_noseason)
-plt.savefig("../pics/seasonality_no.png")
+plt.savefig("../pics/4_seasonality_manual.png")
 
 ## Part 5: AR
 from statsmodels.tsa.ar_model import AR
@@ -153,7 +153,7 @@ print(f"rmse_ma = ", rmse_ar)
 ## Part 6: ARMA
 from statsmodels.tsa.arima_model import ARIMA
 
-model = ARIMA(Y_hours, order=(5, 0, 1))
+model = ARIMA(Y_hours, order=(48, 0, 1))
 model_fit = model.fit(disp=0)
 
 print(model_fit.summary())
