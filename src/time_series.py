@@ -14,19 +14,35 @@ store.close()
 Y = data_out[:, 0].copy()
 del data_out
 
+print("Finished copying data")
 ## Part 1: Autocorrelation
-days = Y.shape[0]//60
+# Hours
+hours = Y.shape[0]//60
+Y_hours = np.zeros((hours, 1))
+
+for hour in range(hours):
+    idx1 = 60*hour
+    idx2 = 60*(hour+1)
+    Y_hours[hour] = Y[idx1:idx2].mean()
+
+plt.clf()
+pd.plotting.autocorrelation_plot(Y_hours)
+plt.title("Autocorrelation of Hours")
+plt.savefig("../pics/ac_hours.png")
+
+# Days
+days = Y.shape[0]//(60*24)
+
 Y_days = np.zeros((days, 1))
 
 for day in range(days):
-    idx1 = 60*day
-    idx2 = 60*(day+1)
-    Y_days[day] = Y[idx1:idx2].mean()
+    idx1 = 24*day
+    idx2 = 24*(day+1)
+    Y_days[day] = Y_hours[idx1:idx2].mean()
 
-df_days = pd.DataFrame(Y_days)
-
+plt.clf()
 pd.plotting.autocorrelation_plot(Y_days)
 plt.title("Autocorrelation of Days")
-plt.show()
+plt.savefig("../pics/ac_days.png")
 
 ## Part 2: 
