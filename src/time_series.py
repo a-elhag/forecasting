@@ -125,12 +125,29 @@ from statsmodels.tsa.ar_model import AR
 model = AR(Y_hours)
 model_fit = model.fit()
 lag = model_fit.k_ar #lag
-param = model_fit.params
+params = model_fit.params
 
-Y_hours.shape[0] -48
-Y_hours_pred = model_fit.predict(dynamic=False)
+Y_hours_output = Y_hours[lag*2:]
+Y_hours_input = Y_hours
 
-rmse_ar = ((Y_hours[48:]- Y_hours_pred)**2).mean()
+Y_hours_input.shape
+predictions = []
+for t in range(Y_hours_input.shape[0]-lag):
+    yhat = params[0]
+    for i, param in enumerate(params[1:]):
+        yhat = yhat + param*Y_hours_input[i+t, 0]
 
-plt.plot(Y_hours[48:], Y_hours_pred)
-plt.show()
+    predictions.append(yhat)
+
+
+predictions = np.array(predictions)
+predictions = predictions[lag:]
+predictions = predictions.reshape(-1, 1)
+predictions.shape
+Y_hours_output.shape
+
+rmse_ar = ((Y_hours_output-predictions)**2).mean()**0.5
+rmse_ar = pipe.reverse_minmax(rmse_ar)[0][0]
+print(f"rmse_ma = ", rmse_ar)
+
+
