@@ -1,2 +1,2 @@
 data/power_clean.h5
-src/__pycache__/
+*.pyc
