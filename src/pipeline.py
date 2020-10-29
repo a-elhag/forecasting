@@ -10,6 +10,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 
 store = pd.HDFStore('../data/power_clean.h5')
+df_train = store['df_train']
+df_train.iloc[:, 0].shift(-2)
 
 class ToDate(BaseEstimator, TransformerMixin):
     def __init__(self):
@@ -38,6 +40,9 @@ class SlidingWindowX(BaseEstimator, TransformerMixin):
         (rows, features) for X
         '''
 
+        print("We are in slidingWindowX")
+        print(type(X))
+
         if X.ndim == 1:
             X = X.reshape(-1, 1)
 
@@ -64,6 +69,9 @@ class SlidingWindowY(BaseEstimator, TransformerMixin):
         Creates a sliding window over an input that has the shape of
         (rows, features) for Y
         '''
+        print("We are in sliding WindowY")
+
+
         X = X.reshape(-1, 1)
         return X[self.window_size*2:, :]
 
@@ -102,9 +110,9 @@ class MyPipeline():
         self.train_flag = train_flag
         self.data_trans = self.X = self.y = 0
         if self.train_flag:
-            self.data = self.store[0].iloc[:, :].to_numpy()
+            self.data = self.store[0].iloc[:, :]
         else:
-            self.data = self.store[1].iloc[:, :].to_numpy()
+            self.data = self.store[1].iloc[:, :]
 
     def data_names(self):
         return list(self.store[0])
@@ -216,6 +224,13 @@ class MyPipeline():
 
         return rmse_final, yhat
 
+## Part 0: Testing
+pipe = MyPipeline(store, [int(1e5), int(1e5)])
+pipe.data_full()
+pipe.pre_fit(2)
+data_out = pipe.pipe_full.transform(pipe.data)
+data_out_Y = data_out[:, 0]
+data_out_x = data_out[:, 1:]
 
 ## Part 1
 if __name__ == '__main__':
