@@ -8,10 +8,14 @@ df_train = store['df_train']
 df_test = store['df_test']
 store.close()
 
-## Part 1: Formatting Data
 df_train.set_index('DateTime', inplace=True)
+df_test.set_index('DateTime', inplace=True)
+
+## Part 1: Formatting Data
+df_train_M = df_train.resample('M').mean().iloc[:, 0]
 df_train_D = df_train.resample('D').mean().iloc[:, 0]
 df_train_H = df_train.resample('H').mean().iloc[:, 0]
+
 
 df_train_D_idx = df_train_D.index.dayofyear.isin([365])
 df_train_D.loc[df_train_D_idx]
@@ -26,3 +30,19 @@ season_D = season_D/_season_D_mean
 plt.plot(np.tile(season_D, (3,1)))
 plt.show()
 
+## Part 2: Making it into a function
+df = df_train.copy()
+freq = "MS"
+
+df = df.resample(freq).mean().iloc[:,0]
+
+df_idx = {
+    "MS": df.index.month,
+    "WS": pd.Int64Index(df.index.isocalendar().week), 
+    "DS": df.index.dayofyear,
+    "HS": df.index.hour
+}
+
+df_idx[freq]
+
+## Part 3
