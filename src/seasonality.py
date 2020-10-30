@@ -54,8 +54,21 @@ def season(df, freq):
     return season 
 
 season_M = season(df_train, "MS")
+season_W = season(df_train, "W")
+season_D = season(df_train, "D")
+season_H = season(df_train, "H")
 
-plt.plot(np.tile(season_M, (4,1)))
+## Part 3: Residual
+df = df_train.iloc[:, 0]
+
+season_M_rep = season_M[df.index.month-1]
+season_W_rep = season_W[pd.Int64Index(df.index.isocalendar().week)-1]
+season_D_rep = season_D[df.index.dayofyear-1]
+season_H_rep = season_H[df.index.hour-1]
+
+plt.plot(season_H_rep)
+plt.grid()
 plt.show()
 
-## Part 3
+## Part 4: 
+
