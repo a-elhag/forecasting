@@ -10,4 +10,7 @@ store.close()
 
 ## Part 1: Formatting Data
 df_train.set_index('DateTime', inplace=True)
-df_train.resample('3T').mean()
+df_train_D = df_train.resample('D').mean().iloc[:, 0]
+df_train_H = df_train.resample('H').mean().iloc[:, 0]
+
+df_train.index.dayofyear
