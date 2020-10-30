@@ -72,7 +72,6 @@ season_W_rep.shape
 season_D_rep.shape
 season_H_rep.shape
 
-
 fig, axs = plt.subplots(3)
 axs[0].plot(data_in)
 axs[0].set_title('Original')
@@ -85,6 +84,14 @@ fig.tight_layout()
 plt.grid()
 plt.show()
 
+## Part 4: Autocorrelation
+from statsmodels.graphics.tsaplots import plot_acf
+df = df_train.resample('H').mean().iloc[:, 0]
+df.dropna().values
 
-## Part 4: 
+pd.plotting.autocorrelation_plot(df.dropna())
+plot_acf(df.dropna().values, lags=100)
+plt.show()
+
+## Part 5:
 
