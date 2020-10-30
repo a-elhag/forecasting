@@ -72,26 +72,52 @@ season_W_rep.shape
 season_D_rep.shape
 season_H_rep.shape
 
-fig, axs = plt.subplots(3)
-axs[0].plot(data_in)
-axs[0].set_title('Original')
-axs[1].plot(season_D_rep*season_H_rep)
-axs[1].set_title('Seasonality')
-axs[2].plot(data_in/season_D_rep/season_H_rep)
-axs[2].set_title('Residual')
+def plot_season(season, name):
+    plt.clf()
+    fig, axs = plt.subplots(3)
+    axs[0].plot(data_in)
+    axs[0].set_title('Original')
+    axs[1].plot(season)
+    axs[1].set_title('Seasonality ' + name)
+    axs[2].plot(data_in/season)
+    axs[2].set_title('Residual')
 
-fig.tight_layout()
-plt.grid()
-plt.show()
+    fig.tight_layout()
+    plt.grid()
+    plt.show()
+
+plot_season(season_M_rep, "Month")
+plot_season(season_W_rep, "Week")
+plot_season(season_D_rep, "Day")
+plot_season(season_H_rep, "Hour")
+plot_season(season_H_rep*season_D_rep, "Day+Hour")
+plot_season(season_W_rep*season_H_rep*season_D_rep, "Day+Week+Hour")
 
 ## Part 4: Autocorrelation
 from statsmodels.graphics.tsaplots import plot_acf
-df = df_train.resample('H').mean().iloc[:, 0]
-df.dropna().values
+# plot_acf(df.dropna().values, lags=100)
 
-pd.plotting.autocorrelation_plot(df.dropna())
-plot_acf(df.dropna().values, lags=100)
+def plot_season_ac(season, freq, name, season_flag = True):
+    if season_flag:
+        df = df_train.iloc[:, 0].div(season.reshape(-1))
+    else: 
+        df = df_train.iloc[:, 0]
+    df = df.resample(freq).mean().dropna()
+    pd.plotting.autocorrelation_plot(df.dropna())
+    plt.title('Autocorrelation of ' + name)
+    plt.savefig('../pics/new/2_season_ac_' + name + '.png')
+    plt.show()
+
+plot_season_ac(season_M_rep, "D", "Original", season_flag = False)
+
+## Part 5: Integrated
+df = df_train.iloc[:, 0]
+data_in = df.values
+data_residual = data_in[:-1] - data_in[1:]
+data_trend = data_in[:-1]/data_residual
+
+plt.plot(data_trend)
 plt.show()
 
-## Part 5:
+
 
