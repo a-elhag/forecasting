@@ -44,5 +44,17 @@ df_idx = {
 }
 
 df_idx[freq]
+df_idx_max = df_idx[freq].max()
+
+season = np.zeros((df_idx_max, 1))
+
+for t in range(1, df_idx_max+1):
+    df_idx_t = df_idx[freq].isin([t])
+    season[t-1] = df.loc[df_idx_t].values.mean()
+
+season = season/df.mean()
+plt.plot(season)
+plt.show()
+
 
 ## Part 3
