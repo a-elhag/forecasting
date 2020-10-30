@@ -32,15 +32,16 @@ plt.show()
 
 ## Part 2: Making it into a function
 df = df_train.copy()
-freq = "MS"
+freq = "M"
 
 df = df.resample(freq).mean().iloc[:,0]
 
 df_idx = {
     "MS": df.index.month,
-    "WS": pd.Int64Index(df.index.isocalendar().week), 
-    "DS": df.index.dayofyear,
-    "HS": df.index.hour
+    "W": pd.Int64Index(df.index.isocalendar().week), 
+    "D": df.index.dayofyear,
+    "H": df.index.hour,
+    "M": df.index.minute
 }
 
 df_idx[freq]
@@ -50,11 +51,10 @@ season = np.zeros((df_idx_max, 1))
 
 for t in range(1, df_idx_max+1):
     df_idx_t = df_idx[freq].isin([t])
-    season[t-1] = df.loc[df_idx_t].values.mean()
+    season[t-1] = np.nanmean(df.loc[df_idx_t].values)
 
 season = season/df.mean()
-plt.plot(season)
+plt.plot(np.tile(season, (4,1)))
 plt.show()
-
 
 ## Part 3
