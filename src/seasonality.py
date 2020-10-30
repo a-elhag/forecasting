@@ -108,15 +108,32 @@ def plot_season_ac(season, freq, name, season_flag = True):
     plt.savefig('../pics/new/2_season_ac_' + name + '.png')
     plt.show()
 
-plot_season_ac(season_M_rep, "D", "Original", season_flag = False)
+plot_season_ac(season_M_rep, "H", "Original in Hours", season_flag = False)
+plot_season_ac(season_M_rep, "D", "Original in Days", season_flag = False)
+plot_season_ac(season_M_rep, "H", "Residual of Months in Hours")
+plot_season_ac(season_M_rep, "D", "Residual of Months in Days")
+plot_season_ac(season_W_rep, "H", "Residual of Weeks in Hours")
+plot_season_ac(season_W_rep, "D", "Residual of Weeks in Days")
+plot_season_ac(season_D_rep, "H", "Residual of Days in Hours")
+plot_season_ac(season_D_rep, "D", "Residual of Days in Days")
+
+plot_season_ac(season_H_rep, "H", "Residual of Hours in Hours")
+plot_season_ac(season_D_rep*season_H_rep, "H", "Combo Residual of Days+Hours in Hours")
 
 ## Part 5: Integrated
 df = df_train.iloc[:, 0]
 data_in = df.values
 data_residual = data_in[:-1] - data_in[1:]
-data_trend = data_in[:-1]/data_residual
 
-plt.plot(data_trend)
+fig, axs = plt.subplots(2)
+axs[0].plot(data_in)
+axs[0].set_title('Original')
+axs[1].plot(data_residual)
+axs[1].set_title('Residual')
+
+plt.tight_layout()
+plt.grid()
+plt.savefig('../pics/new/3_integrated.png')
 plt.show()
 
 
