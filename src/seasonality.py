@@ -66,9 +66,25 @@ season_W_rep = season_W[pd.Int64Index(df.index.isocalendar().week)-1]
 season_D_rep = season_D[df.index.dayofyear-1]
 season_H_rep = season_H[df.index.hour-1]
 
-plt.plot(season_H_rep)
+data_in = df.values.reshape(-1,1)
+season_M_rep.shape
+season_W_rep.shape
+season_D_rep.shape
+season_H_rep.shape
+
+
+fig, axs = plt.subplots(3)
+axs[0].plot(data_in)
+axs[0].set_title('Original')
+axs[1].plot(season_D_rep*season_H_rep)
+axs[1].set_title('Seasonality')
+axs[2].plot(data_in/season_D_rep/season_H_rep)
+axs[2].set_title('Residual')
+
+fig.tight_layout()
 plt.grid()
 plt.show()
+
 
 ## Part 4: 
 
