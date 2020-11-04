@@ -3,14 +3,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-store = pd.HDFStore('../data/power_clean.h5')
-df_train = store['df_train']
-df_test = store['df_test']
-store.close()
-
-df_train.set_index('DateTime', inplace=True)
-df_test.set_index('DateTime', inplace=True)
-
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -30,17 +22,17 @@ class Season():
         '''
 
         self.idx_train = {
-            "MS": df_train.index.month -1,
-            "W": pd.Int64Index(df_train.index.isocalendar().week) -1,
-            "D": df_train.index.dayofyear -1,
-            "H": df_train.index.hour,
+            "MS": self.df_train.index.month - 1,
+            "W": pd.Int64Index(self.df_train.index.isocalendar().week) - 1,
+            "D": self.df_train.index.dayofyear - 1,
+            "H": self.df_train.index.hour,
         }
 
         self.idx_test = {
-            "MS": df_test.index.month,
-            "W": pd.Int64Index(df_test.index.isocalendar().week),
-            "D": df_test.index.dayofyear,
-            "H": df_test.index.hour,
+            "MS": self.df_test.index.month - 1,
+            "W": pd.Int64Index(self.df_test.index.isocalendar().week) - 1,
+            "D": self.df_test.index.dayofyear - 1,
+            "H": self.df_test.index.hour,
         }
 
     def resample(self, freq, flag_train=True):
@@ -68,20 +60,28 @@ class Season():
             print(f"Max {self.freq} :", self.idx_test[self.freq].max())
 
 
+if __name__ == "__main__":
+    store = pd.HDFStore('../data/power_clean.h5')
+    df_train = store['df_train']
+    df_test = store['df_test']
+    store.close()
+    df_train.set_index('DateTime', inplace=True)
+    df_test.set_index('DateTime', inplace=True)
+    season = Season(df_train, df_test)
+    season.resample("MS", flag_train=False)
+    season.get_pattern(10)
+    season.resample("W")
+    season.get_pattern(10)
+    season.resample("D")
+    season.get_pattern(10)
+    season.resample("H")
+    season.get_pattern(10)
 
-season = Season(df_train, df_test)
-season.resample("MS")
-season.get_pattern(10)
-season.resample("W")
-season.get_pattern(10)
-season.resample("D")
-season.get_pattern(10)
-season.resample("H")
-season.get_pattern(10)
+    season.idx_train["W"].isin([1])
 
-season.idx_train["W"].isin([1])
+    
 
-
+'''
 ## Part 1: Stuff
 df_train_M = df_train.resample('M').mean().iloc[:, 0]
 df_train_D = df_train.resample('D').mean().iloc[:, 0]
@@ -206,6 +206,6 @@ plt.tight_layout()
 plt.grid()
 plt.savefig('../pics/new/3_integrated.png')
 plt.show()
-
+'''
 
 
