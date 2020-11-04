@@ -12,6 +12,36 @@ df_train.set_index('DateTime', inplace=True)
 df_test.set_index('DateTime', inplace=True)
 
 ## Part 1: Formatting Data
+class Season():
+    '''
+    This is a class to remove the seasonality from the input data
+    set
+    '''
+    def __init__(self, df_train, df_test):
+        self.df_train = df_train.iloc[:,0]
+        self.df_test = df_test.iloc[:,0]
+
+    def resample(self, freq, flag_train=True):
+        ''' Resample the dataset
+        MS ==> Month (Day 1)
+        W ==> Week
+        D ==> Day of Year
+        H ==> Hour
+        '''
+        if flag_train:
+            self.df_train = self.df_train.resample(freq).mean()
+        else:
+            self.df_test = self.df_test.resample(freq).mean()
+
+    def get_pattern(self, period):
+        pass
+
+
+
+season = Season(df_train, df_test)
+season.resample("W", flag_train=False)
+
+## Part 1: Stuff
 df_train_M = df_train.resample('M').mean().iloc[:, 0]
 df_train_D = df_train.resample('D').mean().iloc[:, 0]
 df_train_H = df_train.resample('H').mean().iloc[:, 0]
