@@ -20,6 +20,28 @@ class Season():
     def __init__(self, df_train, df_test):
         self.df_train = df_train.iloc[:,0]
         self.df_test = df_test.iloc[:,0]
+        self.idx()
+
+    def idx(self):
+        '''
+        Have to subtract 1 from most of the indeces because
+        they are not zero indexed.
+        Idiots
+        '''
+
+        self.idx_train = {
+            "MS": df_train.index.month -1,
+            "W": pd.Int64Index(df_train.index.isocalendar().week) -1,
+            "D": df_train.index.dayofyear -1,
+            "H": df_train.index.hour,
+        }
+
+        self.idx_test = {
+            "MS": df_test.index.month,
+            "W": pd.Int64Index(df_test.index.isocalendar().week),
+            "D": df_test.index.dayofyear,
+            "H": df_test.index.hour,
+        }
 
     def resample(self, freq, flag_train=True):
         ''' Resample the dataset
@@ -28,18 +50,37 @@ class Season():
         D ==> Day of Year
         H ==> Hour
         '''
-        if flag_train:
-            self.df_train = self.df_train.resample(freq).mean()
+        self.freq = freq
+        self.flag_train = flag_train
+
+        if self.flag_train:
+            self.rs_train = self.df_train.resample(self.freq).mean()
         else:
-            self.df_test = self.df_test.resample(freq).mean()
+            self.rs_test = self.df_test.resample(self.freq).mean()
 
     def get_pattern(self, period):
-        pass
+
+        if self.flag_train:
+            print(f"Min {self.freq} :", self.idx_train[self.freq].min())
+            print(f"Max {self.freq} :", self.idx_train[self.freq].max())
+        else:
+            print(f"Min {self.freq} :", self.idx_test[self.freq].min())
+            print(f"Max {self.freq} :", self.idx_test[self.freq].max())
 
 
 
 season = Season(df_train, df_test)
-season.resample("W", flag_train=False)
+season.resample("MS")
+season.get_pattern(10)
+season.resample("W")
+season.get_pattern(10)
+season.resample("D")
+season.get_pattern(10)
+season.resample("H")
+season.get_pattern(10)
+
+season.idx_train["W"].isin([1])
+
 
 ## Part 1: Stuff
 df_train_M = df_train.resample('M').mean().iloc[:, 0]
@@ -66,7 +107,7 @@ def season(df, freq):
 
     df_idx = {
         "MS": df.index.month,
-        "W": pd.Int64Index(df.index.isocalendar().week), 
+        "W": pd.Int64Index(df.index.isocalendar().week),
         "D": df.index.dayofyear,
         "H": df.index.hour,
     }
@@ -81,7 +122,7 @@ def season(df, freq):
         season[t-1] = np.nanmean(df.loc[df_idx_t].values)
 
     season = season/df.mean()
-    return season 
+    return season
 
 season_M = season(df_train, "MS")
 season_W = season(df_train, "W")
@@ -130,7 +171,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 def plot_season_ac(season, freq, name, season_flag = True):
     if season_flag:
         df = df_train.iloc[:, 0].div(season.reshape(-1))
-    else: 
+    else:
         df = df_train.iloc[:, 0]
     df = df.resample(freq).mean().dropna()
     pd.plotting.autocorrelation_plot(df.dropna())
