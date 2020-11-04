@@ -3,6 +3,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+store = pd.HDFStore('../data/power_clean.h5')
+df_train = store['df_train']
+df_test = store['df_test']
+store.close()
+df_train.set_index('DateTime', inplace=True)
+df_test.set_index('DateTime', inplace=True)
+
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -12,28 +19,7 @@ class Season():
     def __init__(self, df_train, df_test):
         self.df_train = df_train.iloc[:,0]
         self.df_test = df_test.iloc[:,0]
-        self.idx()
 
-    def idx(self):
-        '''
-        Have to subtract 1 from most of the indeces because
-        they are not zero indexed.
-        Idiots
-        '''
-
-        self.idx_train = {
-            "MS": self.df_train.index.month - 1,
-            "W": pd.Int64Index(self.df_train.index.isocalendar().week) - 1,
-            "D": self.df_train.index.dayofyear - 1,
-            "H": self.df_train.index.hour,
-        }
-
-        self.idx_test = {
-            "MS": self.df_test.index.month - 1,
-            "W": pd.Int64Index(self.df_test.index.isocalendar().week) - 1,
-            "D": self.df_test.index.dayofyear - 1,
-            "H": self.df_test.index.hour,
-        }
 
     def resample(self, freq, flag_train=True):
         ''' Resample the dataset
@@ -50,38 +36,49 @@ class Season():
         else:
             self.rs_test = self.df_test.resample(self.freq).mean()
 
-    def get_pattern(self, period):
+    def get_idx(self):
+        '''
+        Have to subtract 1 from most of the indeces because
+        they are not zero indexed.
+        Idiots
+        '''
 
         if self.flag_train:
-            print(f"Min {self.freq} :", self.idx_train[self.freq].min())
-            print(f"Max {self.freq} :", self.idx_train[self.freq].max())
+            self.idx_train = {
+                "MS": self.rs_train.index.month - 1,
+                "W": pd.Int64Index(self.rs_train.index.isocalendar().week) - 1,
+                "D": self.rs_train.index.dayofyear - 1,
+                "H": self.rs_train.index.hour}
+        else:
+            self.idx_test = {
+                "MS": self.rs_test.index.month - 1,
+                "W": pd.Int64Index(self.rs_test.index.isocalendar().week) - 1,
+                "D": self.rs_test.index.dayofyear - 1,
+                "H": self.rs_test.index.hour}
+
+    def get_pattern(self, period):
+        self.period = period
+
+        if self.flag_train:
+            total_time = self.idx_train[self.freq].max()
+            total_time = total_time + 1 # Zero Indexed
+
+            self.season = np.zeros(total_time)
+            for t in range(total_time):
+                idx = self.idx_train[self.freq].isin([t])
+                self.season[t] = self.rs_train.loc[idx].values.mean()
         else:
             print(f"Min {self.freq} :", self.idx_test[self.freq].min())
             print(f"Max {self.freq} :", self.idx_test[self.freq].max())
 
 
-if __name__ == "__main__":
-    store = pd.HDFStore('../data/power_clean.h5')
-    df_train = store['df_train']
-    df_test = store['df_test']
-    store.close()
-    df_train.set_index('DateTime', inplace=True)
-    df_test.set_index('DateTime', inplace=True)
-    season = Season(df_train, df_test)
-    season.resample("MS", flag_train=False)
-    season.get_pattern(10)
-    season.resample("W")
-    season.get_pattern(10)
-    season.resample("D")
-    season.get_pattern(10)
-    season.resample("H")
-    season.get_pattern(10)
+season = Season(df_train, df_test)
+season.resample("MS")
+season.get_idx()
+season.get_pattern(10)
+season.season
 
-    season.idx_train["W"].isin([1])
 
-    
-
-'''
 ## Part 1: Stuff
 df_train_M = df_train.resample('M').mean().iloc[:, 0]
 df_train_D = df_train.resample('D').mean().iloc[:, 0]
@@ -206,6 +203,5 @@ plt.tight_layout()
 plt.grid()
 plt.savefig('../pics/new/3_integrated.png')
 plt.show()
-'''
 
 
