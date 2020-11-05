@@ -10,6 +10,7 @@ store.close()
 df_train.set_index('DateTime', inplace=True)
 df_test.set_index('DateTime', inplace=True)
 
+df_train.size
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -20,6 +21,8 @@ class Season():
         self.df_train = df_train.iloc[:,0]
         self.df_test = df_test.iloc[:,0]
 
+        self.season_train = np.ones(df_train.size)
+        self.season_test = np.ones(df_test.size)
 
     def resample(self, freq, flag_train=True):
         ''' Resample the dataset
@@ -58,9 +61,9 @@ class Season():
 
     def get_pattern(self, period):
         self.period = period
+        self.season = np.zeros(self.period)
 
         if self.flag_train:
-            self.season = np.zeros(self.period)
             idx = np.arange(self.idx_train[self.freq].values.shape[0])
 
             for p in range(self.period):
@@ -68,17 +71,37 @@ class Season():
                 self.season[p] = np.nanmean(
                     self.rs_train.iloc[idx_temp].values)
         else:
-            print(f"Min {self.freq} :", self.idx_test[self.freq].min())
-            print(f"Max {self.freq} :", self.idx_test[self.freq].max())
+            idx = np.arange(self.idx_test[self.freq].values.shape[0])
 
+            for p in range(self.period):
+                idx_temp = idx[p::self.period]
+                self.season[p] = np.nanmean(
+                    self.rs_test.iloc[idx_temp].values)
+
+
+    def stack_season(self):
+        pass
+
+
+from scipy import signal
 
 season = Season(df_train, df_test)
-season.resample("H")
+season.resample("D")
 season.get_idx()
-season.get_pattern(24*7)
-season.season.shape
-plt.plot(season.season)
+season.get_pattern(365)
+season.season
+
+## Plotting
+rate = 10
+size = season.season.shape[0]
+a = np.repeat(season.season, rate)
+b = signal.resample(season.season, rate*size)
+
+plt.plot(a, 'go-', label='original')
+plt.plot(b, '.-', label='resample')
+plt.legend()
 plt.show()
+
 
 ## Part 2: Making it into a function
 def season(df, freq):
