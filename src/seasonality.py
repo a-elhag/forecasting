@@ -1,7 +1,8 @@
 ## Part 0: Loading
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from scipy import signal
 
 store = pd.HDFStore('../data/power_clean.h5')
 df_train = store['df_train']
@@ -79,29 +80,37 @@ class Season():
                     self.rs_test.iloc[idx_temp].values)
 
 
-    def stack_season(self):
-        pass
+    def get_year(self):
+        if self.flag_train:
+            self.first_train = self.idx_train[self.freq][
+                (np.diff(self.idx_train[self.freq]) < 0).argmax()]
+        else:
+            self.first_test = self.idx_test[self.freq][
+                (np.diff(self.idx_test[self.freq]) < 0).argmax()]
+        self.year = np.repeat(self.season, 8760//self.period)
 
-
-from scipy import signal
 
 season = Season(df_train, df_test)
-season.resample("D")
+season.resample("W")
 season.get_idx()
-season.get_pattern(365)
-season.season
+season.get_pattern(7)
+season.get_year()
+season.year.shape
+season.first_train
+
 
 ## Plotting
-rate = 10
+rate = 24
 size = season.season.shape[0]
 a = np.repeat(season.season, rate)
 b = signal.resample(season.season, rate*size)
+b = signal.resample_poly(season.season, 24, 1)
+b.shape
 
 plt.plot(a, 'go-', label='original')
 plt.plot(b, '.-', label='resample')
 plt.legend()
 plt.show()
-
 
 ## Part 2: Making it into a function
 def season(df, freq):
