@@ -60,42 +60,24 @@ class Season():
         self.period = period
 
         if self.flag_train:
-            total_time = self.idx_train[self.freq].max()
-            total_time = total_time + 1 # Zero Indexed
+            self.season = np.zeros(self.period)
+            idx = np.arange(self.idx_train[self.freq].values.shape[0])
 
-            self.season = np.zeros(total_time)
-            for t in range(total_time):
-                idx = self.idx_train[self.freq].isin([t])
-                self.season[t] = self.rs_train.loc[idx].values.mean()
+            for p in range(self.period):
+                idx_temp = idx[p::self.period]
+                self.season[p] = np.nanmean(
+                    self.rs_train.iloc[idx_temp].values)
         else:
             print(f"Min {self.freq} :", self.idx_test[self.freq].min())
             print(f"Max {self.freq} :", self.idx_test[self.freq].max())
 
 
 season = Season(df_train, df_test)
-season.resample("MS")
+season.resample("H")
 season.get_idx()
-season.get_pattern(10)
-season.season
-
-
-## Part 1: Stuff
-df_train_M = df_train.resample('M').mean().iloc[:, 0]
-df_train_D = df_train.resample('D').mean().iloc[:, 0]
-df_train_H = df_train.resample('H').mean().iloc[:, 0]
-
-
-df_train_D_idx = df_train_D.index.dayofyear.isin([365])
-df_train_D.loc[df_train_D_idx]
-
-season_D = np.zeros((366,1))
-_season_D_mean = df_train_D.mean()
-for day in range(1, 367):
-    df_train_D_idx = df_train_D.index.dayofyear.isin([day])
-    season_D[day-1] = df_train_D.loc[df_train_D_idx].values.mean()
-
-season_D = season_D/_season_D_mean
-plt.plot(np.tile(season_D, (3,1)))
+season.get_pattern(24*7)
+season.season.shape
+plt.plot(season.season)
 plt.show()
 
 ## Part 2: Making it into a function
