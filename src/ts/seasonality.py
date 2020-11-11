@@ -95,19 +95,24 @@ class Season():
         self.get_year()
 
 
-    def transform(self):
+    def seasoned(self):
         self.year = np.tile(self.year, 2)
-        self.transform_train1 = self.df_train['2007']/self.year[:self.df_train['2007'].shape[0]]
-        self.transform_train2 = self.df_train['2008']/self.year[:self.df_train['2008'].shape[0]]
-        self.transform_train3 = self.df_train['2009']/self.year[:self.df_train['2009'].shape[0]]
+        self.seasoned_train1 = self.df_train['2007']/self.year[:self.df_train['2007'].shape[0]]
+        self.seasoned_train2 = self.df_train['2008']/self.year[:self.df_train['2008'].shape[0]]
+        self.seasoned_train3 = self.df_train['2009']/self.year[:self.df_train['2009'].shape[0]]
 
-        self.transform_train = pd.concat([self.transform_train1,
-                                          self.transform_train2,
-                                          self.transform_train3])
+        self.seasoned_train = pd.concat([self.seasoned_train1,
+                                          self.seasoned_train2,
+                                          self.seasoned_train3])
 
-
-    def integrated(self):
-        self.transform_train = self.transform_train.diff()
+    def integrated(self, order):
+        self.order = order
+        if self.order == 0:
+            self.integrated_train = self.seasoned_train.dropna()
+        if self.order == 1:
+            self.integrated_train = self.seasoned_train.diff().dropna()
+        if self.order == 2:
+            self.integrated_train = self.seasoned_train.diff().diff().dropna()
 
     def test_ac(self):
         '''
@@ -120,8 +125,7 @@ class Season():
         durbin_watson(ols_res.resid)
         '''
 
-        # resampled = self.transform_train.resample("H").mean().dropna()
-        resampled = self.transform_train
+        resampled = self.integrated_train
         ols_res = OLS(resampled, np.ones(
             resampled.shape[0])).fit()
         return durbin_watson(ols_res.resid)
@@ -137,13 +141,32 @@ class Season():
 
 
 ## Part 1: After class
-if __name__ == "__main__":
-    from statsmodels.tsa.stattools import adfuller
-    season = Season(df_train, df_test)
-    season.get_all("D", 365)
-    season.get_all("H", 24*7)
-    season.transform()
-    print(season.test_ac(True))
-    print(season.test_ac(False))
+season = Season(df_train, df_test)
+season.get_all("D", 365)
+season.get_all("H", 24*7)
+season.seasoned()
+season.integrated(1)
+print(season.test_ac())
 
+## Part 2: AR
+from statsmodels.graphics.tsaplots import plot_pacf
+
+plot_pacf(season.integrated_train, lags=10) # 1 is significant
+plt.show()
+
+## Part 3: MA
+from statsmodels.graphics.tsaplots import plot_acf
+
+plot_acf(season.integrated_train.resample("D").mean().dropna(), lags=10) # 1 is significant
+plt.show()
+
+## Part 4: ARIMA
+from statsmodels.tsa.arima_model import ARIMA
+
+data_in = season.df_train.resample("D").mean().dropna().values
+model = ARIMA(data_in, order=(1,1,1))
+model_fit = model.fit(disp=0)
+print(model_fit.summary())
+
+## Part 5: 
 
