@@ -104,7 +104,10 @@ class Season():
         self.transform_train = pd.concat([self.transform_train1,
                                           self.transform_train2,
                                           self.transform_train3])
-        self.residuals_train = self.df_train - self.transform_train
+
+
+    def integrated(self):
+        self.transform_train = self.transform_train.diff()
 
     def test_ac(self):
         '''
@@ -117,8 +120,10 @@ class Season():
         durbin_watson(ols_res.resid)
         '''
 
-        ols_res = OLS(self.transform_train, np.ones(
-            self.transform_train.shape[0])).fit()
+        # resampled = self.transform_train.resample("H").mean().dropna()
+        resampled = self.transform_train
+        ols_res = OLS(resampled, np.ones(
+            resampled.shape[0])).fit()
         return durbin_watson(ols_res.resid)
 
     def plot_year(self):
@@ -127,16 +132,18 @@ class Season():
 
     def plot_ac(self):
         pd.plotting.autocorrelation_plot(
-            self.transform_train.resample("D").mean().dropna())
+            self.transform_train.resample("H").mean().dropna())
         plt.show()
 
 
 ## Part 1: After class
-
-season = Season(df_train, df_test)
-season.get_all("D", 365)
-season.get_all("H", 24)
-season.transform()
-season.test_ac()
+if __name__ == "__main__":
+    from statsmodels.tsa.stattools import adfuller
+    season = Season(df_train, df_test)
+    season.get_all("D", 365)
+    season.get_all("H", 24*7)
+    season.transform()
+    print(season.test_ac(True))
+    print(season.test_ac(False))
 
 
