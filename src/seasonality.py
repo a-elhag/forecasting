@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 
+# Stats Models
+from statsmodels.regression.linear_model import OLS
+from statsmodels.stats.stattools import durbin_watson
+
 store = pd.HDFStore('../data/power_clean.h5')
 df_train = store['df_train']
 df_test = store['df_test']
@@ -13,6 +17,7 @@ df_test.set_index('DateTime', inplace=True)
 
 idx = df_train.index >= '2007'
 df_train = df_train[idx]
+
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -101,6 +106,21 @@ class Season():
                                           self.transform_train3])
         self.residuals_train = self.df_train - self.transform_train
 
+    def test_ac(self):
+        '''
+        Calculate OLS then find durbin_watson for residuals
+        0 < ans < 2 ==> Positive correlation
+        2 < ans < 4 ==> Negative correlation
+        ans == 2    ==> Zero correlation
+
+        ols_res = OLS(np.random.rand(1000), np.ones(1000)).fit()
+        durbin_watson(ols_res.resid)
+        '''
+
+        ols_res = OLS(self.transform_train, np.ones(
+            self.transform_train.shape[0])).fit()
+        return durbin_watson(ols_res.resid)
+
     def plot_year(self):
         plt.plot(self.year[::60])
         plt.show()
@@ -112,9 +132,11 @@ class Season():
 
 
 ## Part 1: After class
+
 season = Season(df_train, df_test)
 season.get_all("D", 365)
-season.get_all("H", 24*7)
+season.get_all("H", 24)
 season.transform()
+season.test_ac()
 
 
