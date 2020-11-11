@@ -11,7 +11,6 @@ store.close()
 df_train.set_index('DateTime', inplace=True)
 df_test.set_index('DateTime', inplace=True)
 
-df_train.size
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -65,7 +64,8 @@ class Season():
         self.season = np.zeros(self.period)
 
         if self.flag_train:
-            idx = np.arange(self.idx_train[self.freq].values.shape[0])
+            idx_zero = np.where((self.idx_train[self.freq].values==0))[0][0]
+            idx = np.arange(self.idx_train[self.freq].values.shape[0] - idx_zero) + idx_zero
 
             for p in range(self.period):
                 idx_temp = idx[p::self.period]
@@ -81,36 +81,23 @@ class Season():
 
 
     def get_year(self):
-        if self.flag_train:
-            self.first_train = self.idx_train[self.freq][
-                (np.diff(self.idx_train[self.freq]) < 0).argmax()]
-        else:
-            self.first_test = self.idx_test[self.freq][
-                (np.diff(self.idx_test[self.freq]) < 0).argmax()]
+        rate = 2
+        length = self.season.shape[0]
+        self.year = signal.resample(self.season, rate*length)
+        self.year = signal.resample_poly(self.season, rate, 1)
         self.year = np.repeat(self.season, 8760//self.period)
+
+    def plot_year(self):
+        plt.plot(self.year)
+        plt.show()
 
 
 season = Season(df_train, df_test)
-season.resample("W")
+season.resample("D")
 season.get_idx()
-season.get_pattern(7)
+season.get_pattern(365)
 season.get_year()
-season.year.shape
-season.first_train
-
-
-## Plotting
-rate = 24
-size = season.season.shape[0]
-a = np.repeat(season.season, rate)
-b = signal.resample(season.season, rate*size)
-b = signal.resample_poly(season.season, 24, 1)
-b.shape
-
-plt.plot(a, 'go-', label='original')
-plt.plot(b, '.-', label='resample')
-plt.legend()
-plt.show()
+season.plot_year()
 
 ## Part 2: Making it into a function
 def season(df, freq):
