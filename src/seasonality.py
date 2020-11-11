@@ -26,7 +26,7 @@ class Season():
 
         self.year = np.ones(8760)
 
-    def resample(self, freq, flag_train=True):
+    def resample(self, freq):
         ''' Resample the dataset
         MS ==> Month (Day 1)
         W ==> Week
@@ -34,12 +34,7 @@ class Season():
         H ==> Hour
         '''
         self.freq = freq
-        self.flag_train = flag_train
-
-        if self.flag_train:
-            self.rs_train = self.df_train.resample(self.freq).mean()
-        else:
-            self.rs_test = self.df_test.resample(self.freq).mean()
+        self.rs_train = self.df_train.resample(self.freq).mean()
 
     def get_idx(self):
         '''
@@ -48,38 +43,23 @@ class Season():
         Idiots
         '''
 
-        if self.flag_train:
-            self.idx_train = {
-                "MS": self.rs_train.index.month - 1,
-                "W": pd.Int64Index(self.rs_train.index.isocalendar().week) - 1,
-                "D": self.rs_train.index.dayofyear - 1,
-                "H": self.rs_train.index.hour}
-        else:
-            self.idx_test = {
-                "MS": self.rs_test.index.month - 1,
-                "W": pd.Int64Index(self.rs_test.index.isocalendar().week) - 1,
-                "D": self.rs_test.index.dayofyear - 1,
-                "H": self.rs_test.index.hour}
+        self.idx_train = {
+            "MS": self.rs_train.index.month - 1,
+            "W": pd.Int64Index(self.rs_train.index.isocalendar().week) - 1,
+            "D": self.rs_train.index.dayofyear - 1,
+            "H": self.rs_train.index.hour}
 
     def get_pattern(self, period):
         self.period = period
         self.season = np.zeros(self.period)
 
-        if self.flag_train:
-            idx_zero = np.where((self.idx_train[self.freq].values==0))[0][0]
-            idx = np.arange(self.idx_train[self.freq].values.shape[0] - idx_zero) + idx_zero
+        idx_zero = np.where((self.idx_train[self.freq].values==0))[0][0]
+        idx = np.arange(self.idx_train[self.freq].values.shape[0] - idx_zero) + idx_zero
 
-            for p in range(self.period):
-                idx_temp = idx[p::self.period]
-                self.season[p] = np.nanmean(
-                    self.rs_train.iloc[idx_temp].values)
-        else:
-            idx = np.arange(self.idx_test[self.freq].values.shape[0])
-
-            for p in range(self.period):
-                idx_temp = idx[p::self.period]
-                self.season[p] = np.nanmean(
-                    self.rs_test.iloc[idx_temp].values)
+        for p in range(self.period):
+            idx_temp = idx[p::self.period]
+            self.season[p] = np.nanmean(
+                self.rs_train.iloc[idx_temp].values)
 
 
     def get_year(self):
@@ -88,11 +68,17 @@ class Season():
         self.year_temp = signal.resample(self.season, rate*length)
         self.year_temp = signal.resample_poly(self.season, rate, 1)
 
-        time_repeat = int(np.ceil(8760/season.period))
+        time_repeat = int(np.ceil(8760/self.period))
         self.year_temp = np.repeat(self.season, time_repeat)
         self.year_temp = self.year_temp[:8760]
 
         self.year = self.year*self.year_temp
+
+    def get_all(self, freq, period):
+        self.resample(freq)
+        self.get_idx()
+        self.get_pattern(period)
+        self.get_year()
 
 
     def plot_year(self):
@@ -101,15 +87,8 @@ class Season():
 
 
 season = Season(df_train, df_test)
-season.resample("D")
-season.get_idx()
-season.get_pattern(365)
-season.get_year()
-
-season.resample("H")
-season.get_idx()
-season.get_pattern(24*7)
-season.get_year()
+season.get_all("D", 365)
+season.get_all("H", 24*7)
 
 season.plot_year()
 
