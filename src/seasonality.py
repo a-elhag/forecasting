@@ -24,6 +24,8 @@ class Season():
         self.season_train = np.ones(df_train.size)
         self.season_test = np.ones(df_test.size)
 
+        self.year = np.ones(8760)
+
     def resample(self, freq, flag_train=True):
         ''' Resample the dataset
         MS ==> Month (Day 1)
@@ -83,9 +85,15 @@ class Season():
     def get_year(self):
         rate = 2
         length = self.season.shape[0]
-        self.year = signal.resample(self.season, rate*length)
-        self.year = signal.resample_poly(self.season, rate, 1)
-        self.year = np.repeat(self.season, 8760//self.period)
+        self.year_temp = signal.resample(self.season, rate*length)
+        self.year_temp = signal.resample_poly(self.season, rate, 1)
+
+        time_repeat = int(np.ceil(8760/season.period))
+        self.year_temp = np.repeat(self.season, time_repeat)
+        self.year_temp = self.year_temp[:8760]
+
+        self.year = self.year*self.year_temp
+
 
     def plot_year(self):
         plt.plot(self.year)
@@ -97,6 +105,12 @@ season.resample("D")
 season.get_idx()
 season.get_pattern(365)
 season.get_year()
+
+season.resample("H")
+season.get_idx()
+season.get_pattern(24*7)
+season.get_year()
+
 season.plot_year()
 
 ## Part 2: Making it into a function
