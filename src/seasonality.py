@@ -89,9 +89,6 @@ class Season():
         self.get_pattern(period)
         self.get_year()
 
-    def plot_year(self):
-        plt.plot(self.year[::60])
-        plt.show()
 
     def transform(self):
         self.year = np.tile(self.year, 2)
@@ -102,8 +99,16 @@ class Season():
         self.transform_train = pd.concat([self.transform_train1,
                                           self.transform_train2,
                                           self.transform_train3])
+        self.residuals_train = self.df_train - self.transform_train
 
+    def plot_year(self):
+        plt.plot(self.year[::60])
+        plt.show()
 
+    def plot_ac(self):
+        pd.plotting.autocorrelation_plot(
+            self.transform_train.resample("D").mean().dropna())
+        plt.show()
 
 
 ## Part 1: After class
@@ -112,36 +117,4 @@ season.get_all("D", 365)
 season.get_all("H", 24*7)
 season.transform()
 
-plt.plot(season.transform_train)
-plt.show()
 
-
-## Part 4: Autocorrelation
-from statsmodels.graphics.tsaplots import plot_acf
-def plot_season_ac(season, freq, name, season_flag = True):
-    if season_flag:
-        df = df_train.iloc[:, 0].div(season.reshape(-1))
-    else:
-        df = df_train.iloc[:, 0]
-    df = df.resample(freq).mean().dropna()
-    pd.plotting.autocorrelation_plot(df.dropna())
-    plt.title('Autocorrelation of ' + name)
-    plt.savefig('../pics/new/2_season_ac_' + name + '.png')
-    plt.show()
-
-## Part 5: Integrated
-df = df_train.iloc[:, 0]
-data_in = df.values
-data_residual = data_in[:-1] - data_in[1:]
-
-
-fig, axs = plt.subplots(2)
-axs[0].plot(data_in)
-axs[0].set_title('Original')
-axs[1].plot(data_residual)
-axs[1].set_title('Residual')
-
-plt.tight_layout()
-plt.grid()
-plt.savefig('../pics/new/3_integrated.png')
-plt.show()
