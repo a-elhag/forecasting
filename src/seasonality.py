@@ -11,6 +11,8 @@ store.close()
 df_train.set_index('DateTime', inplace=True)
 df_test.set_index('DateTime', inplace=True)
 
+idx = df_train.index >= '2007'
+df_train = df_train[idx]
 ## Part 1: Formatting Data
 class Season():
     '''
@@ -24,7 +26,7 @@ class Season():
         self.season_train = np.ones(df_train.size)
         self.season_test = np.ones(df_test.size)
 
-        self.year = np.ones(8760)
+        self.year = np.ones(60*8760)
 
     def resample(self, freq):
         ''' Resample the dataset
@@ -63,16 +65,23 @@ class Season():
 
 
     def get_year(self):
-        rate = 2
-        length = self.season.shape[0]
-        self.year_temp = signal.resample(self.season, rate*length)
-        self.year_temp = signal.resample_poly(self.season, rate, 1)
+        # rate = 2
+        # length = self.season.shape[0]
+        # self.year_temp = signal.resample(self.season, rate*length)
+        # self.year_temp = signal.resample_poly(self.season, rate, 1)
 
-        time_repeat = int(np.ceil(8760/self.period))
-        self.year_temp = np.repeat(self.season, time_repeat)
-        self.year_temp = self.year_temp[:8760]
+        if self.freq == "D":
+            time_repeat = int(np.ceil(60*8760/self.period))
+            self.year_temp = np.repeat(self.season, time_repeat)
 
-        self.year = self.year*self.year_temp
+        if self.freq == "H":
+            time_repeat = 60
+            self.year_temp = np.repeat(self.season, time_repeat)
+            time_tile = int(np.ceil(8760/self.period))
+            self.year_temp = np.tile(self.year_temp, time_tile)
+
+        self.year_temp = self.year_temp[:60*8760]
+        self.year = self.year[:60*8760]*self.year_temp
 
     def get_all(self, freq, period):
         self.resample(freq)
@@ -80,17 +89,32 @@ class Season():
         self.get_pattern(period)
         self.get_year()
 
-
     def plot_year(self):
-        plt.plot(self.year)
+        plt.plot(self.year[::60])
         plt.show()
 
+    def transform(self):
+        self.year = np.tile(self.year, 2)
+        self.transform_train1 = self.df_train['2007']/self.year[:self.df_train['2007'].shape[0]]
+        self.transform_train2 = self.df_train['2008']/self.year[:self.df_train['2008'].shape[0]]
+        self.transform_train3 = self.df_train['2009']/self.year[:self.df_train['2009'].shape[0]]
 
+        self.transform_train = pd.concat([self.transform_train1,
+                                          self.transform_train2,
+                                          self.transform_train3])
+
+
+
+
+## Part 1: After class
 season = Season(df_train, df_test)
 season.get_all("D", 365)
 season.get_all("H", 24*7)
+season.transform()
 
-season.plot_year()
+plt.plot(season.transform_train)
+plt.show()
+
 
 ## Part 4: Autocorrelation
 from statsmodels.graphics.tsaplots import plot_acf
@@ -109,6 +133,7 @@ def plot_season_ac(season, freq, name, season_flag = True):
 df = df_train.iloc[:, 0]
 data_in = df.values
 data_residual = data_in[:-1] - data_in[1:]
+
 
 fig, axs = plt.subplots(2)
 axs[0].plot(data_in)
