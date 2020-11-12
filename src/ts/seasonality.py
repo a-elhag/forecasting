@@ -205,8 +205,6 @@ class Season():
             self.rmse = np.sqrt(mean_squared_error(predict[:idx2], self.ar_train.values[idx1:]))
             self.ma_train = self.ar_train[idx1:] - predict[:idx2]
 
-
-
     def test_ac(self):
         '''
         Calculate OLS then find durbin_watson for residuals
@@ -223,6 +221,46 @@ class Season():
             resampled.shape[0])).fit()
         return durbin_watson(ols_res.resid)
 
+    def seasonality_search(self, order_season):
+        
+        self.order_season = order_season
+
+        if self.order_season == 0:
+            self.tag_season = "Nothing"
+            self.seasoned()
+        elif self.order_season == 1:
+            self.tag_season = "D:365"
+            self.get_all("D", 365)
+            self.seasoned()
+        elif self.order_season == 2:
+            self.tag_season = "H:24"
+            self.get_all("H", 24)
+            self.seasoned()
+        elif self.order_season == 3:
+            self.tag_season = "H:24*7"
+            self.get_all("H", 24*7)
+            self.seasoned()
+        elif self.order_season == 4:
+            self.tag_season = "D:365 + H:24"
+            self.get_all("D", 365)
+            self.get_all("H", 24)
+            self.seasoned()
+        elif self.order_season == 5:
+            self.tag_season = "D:365 + H:24*7"
+            self.get_all("D", 365)
+            self.get_all("H", 24*7)
+            self.seasoned()
+        elif self.order_season == 6:
+            self.tag_season = "D:365 + H:24 + H:24*7"
+            self.get_all("D", 365)
+            self.get_all("H", 24)
+            self.get_all("H", 24*7)
+            self.seasoned()
+
+    def grid_search(self):
+        pass
+
+
     def plot_year(self):
         plt.plot(self.year[::60])
         plt.show()
@@ -235,19 +273,19 @@ class Season():
 
 ## Part 1: After class
 season = Season(df_train, df_test)
-season.get_all("D", 365)
-season.get_all("H", 24*7)
-season.seasoned()
-season.integrated(0)
+season.seasonality_search(5)
+# season.get_all("D", 365)
+# season.get_all("H", 24*7)
+# season.seasoned()
+season.integrated(1)
 season.ar(2)
 season.ma(2)
-# season.plot_ac()
 print(season.test_ac())
 
 ## Part 2: AR
 from statsmodels.graphics.tsaplots import plot_pacf
 
-plot_pacf(season.integrated_train, lags=10) # 1 is significant
+plot_pacf(season.ar_train, lags=10) # 1 is significant
 plt.show()
 
 ## Part 3: MA
