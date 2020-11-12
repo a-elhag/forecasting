@@ -100,8 +100,13 @@ class Season():
     def seasoned(self):
         self.year = np.tile(self.year, 2)
         self.seasoned_train1 = self.df_train['2007']/self.year[:self.df_train['2007'].shape[0]]
+        # self.seasoned_train1 = self.seasoned_train1 - self.df_train['2007']
+
         self.seasoned_train2 = self.df_train['2008']/self.year[:self.df_train['2008'].shape[0]]
+        # self.seasoned_train2 = self.seasoned_train2 - self.df_train['2008']
+
         self.seasoned_train3 = self.df_train['2009']/self.year[:self.df_train['2009'].shape[0]]
+        # self.seasoned_train3 = self.seasoned_train3 - self.df_train['2009']
 
         self.seasoned_train = pd.concat([self.seasoned_train1,
                                           self.seasoned_train2,
@@ -301,26 +306,48 @@ season = Season(df_train, df_test)
 season.grid_search()
 season.results_df.iloc[season.idx_min]
 
-
-## Part 2: AR
-from statsmodels.graphics.tsaplots import plot_pacf
-
-plot_pacf(season.ar_train, lags=10) # 1 is significant
-plt.show()
-
-## Part 3: MA
+## Part 2: Plotting
 from statsmodels.graphics.tsaplots import plot_acf
 
-plot_acf(season.integrated_train.resample("D").mean().dropna(), lags=10) # 1 is significant
-plt.show()
+seas_opt = Season(df_train, df_test)
+seas_opt.seasonality_search(3) 
+seas_opt.integrated(1) 
+seas_opt.ar(2) 
+seas_opt.ma(2) 
 
-## Part 4: ARIMA
-from statsmodels.tsa.arima_model import ARIMA
+def ac_plot(data, flag_option=1):
+    if flag_option==1:
+        pd.plotting.autocorrelation_plot(
+            data.resample("H").mean().dropna())
+    elif flag_option==2:
+        plot_acf(
+            data.resample("H").mean().dropna(),
+            lags=10
+        )
 
-data_in = season.df_train.resample("D").mean().dropna().values
-model = ARIMA(data_in, order=(1,1,1))
-model_fit = model.fit(disp=0)
-print(model_fit.summary())
+## Part 3a: Plot 1
+plt.plot(seas_opt.df_train.resample("D").mean().dropna(), label="original")
+plt.plot(seas_opt.seasoned_train.resample("D").mean().dropna(), label="seasoned")
+plt.title("Original vs Seasoned")
+plt.grid()
+plt.legend()
+plt.savefig("pics/1a_orvssea")
+
+plt.plot(seas_opt.df_train.resample("D").mean().dropna(), label="original")
+plt.plot(seas_opt.seasoned_train.resample("D").mean().dropna(), label="seasoned")
+plt.title("Original vs Seasoned")
+plt.grid()
+plt.legend()
+plt.savefig("pics/2a_orvssea")
+
+## Part 3b: 
+
+seas_opt.df_train
+seas_opt.seasoned_train
+seas_opt.integrated_train
+seas_opt.ar_train
+seas_opt.ma_train
+
 
 ## Part 5: 
 
