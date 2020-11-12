@@ -29,14 +29,12 @@ lag_amount = 2
 model = AutoReg(df_train.values, lags=lag_amount)
 model_fit = model.fit()
 coef = model_fit.params
-
 predictions = model_fit.predict(
     start = 0, end = df_train.shape[0],
     dynamic = False)
 
 predict = np.zeros((df_train.shape[0]-lag_amount+1))
 
-predict
 for lag in range(1,lag_amount+1):
     if lag_amount == 1:
         df_train_lag = df_train.dropna().values
@@ -57,9 +55,13 @@ for lag in range(1,lag_amount+1):
 predict = predict + coef[0]
 error = (predict-predictions).sum()
 print(error)
+predictions.shape
+df_train.shape
 
 if lag_amount==1:
     rmse = np.sqrt(mean_squared_error(predict, df_train.values))
+elif lag_amount==0:
+    rmse = np.sqrt(mean_squared_error(predict[:-1], df_train.values))
 else:
     idx1 = (lag_amount-1)*2
     idx2 = -(lag_amount-1)

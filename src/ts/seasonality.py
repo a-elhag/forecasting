@@ -7,8 +7,10 @@ from scipy import signal
 # Stats Models
 from statsmodels.regression.linear_model import OLS
 from statsmodels.stats.stattools import durbin_watson
+from statsmodels.tsa.ar_model import AutoReg
+from sklearn.metrics import mean_squared_error
 
-store = pd.HDFStore('../data/power_clean.h5')
+store = pd.HDFStore('../../data/power_clean.h5')
 df_train = store['df_train']
 df_test = store['df_test']
 store.close()
@@ -114,6 +116,51 @@ class Season():
         if self.order == 2:
             self.integrated_train = self.seasoned_train.diff().diff().dropna()
 
+    def ar(self, lag_amount):
+        self.lag_amount = lag_amount
+        model_ar = AutoReg(self.integrated_train.values, lags=self.lag_amount)
+        model_ar_fit = model_ar.fit()
+        self.coef = model_ar_fit.params
+        predictions = model_ar_fit.predict(
+            start = 0, end = self.integrated_train.shape[0],
+            dynamic = False)
+
+        predict = np.zeros((self.integrated_train.shape[0]-lag_amount+1))
+
+        for lag in range(1,self.lag_amount+1):
+            if self.lag_amount == 1:
+                self.integrated_train_lag = self.integrated_train.dropna().values
+                predict = predict + self.integrated_train_lag*self.coef[lag]
+                break
+
+            if lag == 1:
+                self.integrated_train_lag = self.integrated_train[self.lag_amount-1:].dropna().values
+            elif lag == self.lag_amount+1:
+                self.integrated_train_lag = self.integrated_train[:-self.lag_amount+1].dropna().values
+            else:
+                idx1 = -lag + self.lag_amount
+                idx2 = -lag + 1
+                self.integrated_train_lag = self.integrated_train[idx1:idx2].dropna().values
+
+            predict = predict + self.integrated_train_lag*self.coef[lag]
+
+        predict = predict + self.coef[0]
+        error = (predict-predictions).sum()
+
+        if self.lag_amount==1:
+            self.rmse = np.sqrt(mean_squared_error(predict, self.integrated_train.values))
+            self.ar_train = self.integrated_train - predict
+        elif self.lag_amount==0:
+            self.rmse = np.sqrt(mean_squared_error(predict[:-1], self.integrated_train.values))
+            self.ar_train = self.integrated_train - predict[:-1]
+        else:
+            idx1 = (self.lag_amount-1)*2
+            idx2 = -(self.lag_amount-1)
+
+            self.rmse = np.sqrt(mean_squared_error(predict[:idx2], self.integrated_train.values[idx1:]))
+            self.ar_train = self.integrated_train[idx1:] - predict[:idx2]
+
+
     def test_ac(self):
         '''
         Calculate OLS then find durbin_watson for residuals
@@ -125,7 +172,7 @@ class Season():
         durbin_watson(ols_res.resid)
         '''
 
-        resampled = self.integrated_train
+        resampled = self.ar_train
         ols_res = OLS(resampled, np.ones(
             resampled.shape[0])).fit()
         return durbin_watson(ols_res.resid)
@@ -136,7 +183,7 @@ class Season():
 
     def plot_ac(self):
         pd.plotting.autocorrelation_plot(
-            self.transform_train.resample("H").mean().dropna())
+            self.ar_train.resample("H").mean().dropna())
         plt.show()
 
 
@@ -145,7 +192,9 @@ season = Season(df_train, df_test)
 season.get_all("D", 365)
 season.get_all("H", 24*7)
 season.seasoned()
-season.integrated(1)
+season.integrated(0)
+season.ar(2)
+season.plot_ac()
 print(season.test_ac())
 
 ## Part 2: AR
