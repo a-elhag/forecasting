@@ -219,7 +219,7 @@ class Season():
         resampled = self.ma_train
         ols_res = OLS(resampled, np.ones(
             resampled.shape[0])).fit()
-        return durbin_watson(ols_res.resid)
+        self.test_durbin_watson = durbin_watson(ols_res.resid)
 
     def seasonality_search(self, order_season):
         
@@ -258,8 +258,33 @@ class Season():
             self.seasoned()
 
     def grid_search(self):
-        pass
+        self.values = []
+        self.keys = []
+        for sea in range(7):
+            self.seasonality_search(sea)
+            for i in range(3):
+                self.integrated(i)
+                for lag in range(3):
+                    self.ar(lag)
+                    for lag_ma in range(3):
+                        self.ma(lag_ma)
 
+                        self.test_ac()
+                        string=f"{self.tag_season}, i: {i}, ar: {lag}, ma: {lag_ma}"
+                        print(string)
+                        print(self.test_durbin_watson)
+                        print("--------------")
+                        self.values.append(self.test_durbin_watson)
+                        self.keys.append(string)
+
+        self.results_df = pd.DataFrame(
+            {'keys': self.keys,
+             'values': self.values
+            })
+
+        self.results_df.iloc[:,1] = self.results_df.iloc[:,1] - 2
+        self.results_df.iloc[:,1] = np.abs(self.results_df.iloc[:,1])
+        self.idx_min = self.results_df.iloc[:,1].idxmin()
 
     def plot_year(self):
         plt.plot(self.year[::60])
@@ -273,14 +298,9 @@ class Season():
 
 ## Part 1: After class
 season = Season(df_train, df_test)
-season.seasonality_search(5)
-# season.get_all("D", 365)
-# season.get_all("H", 24*7)
-# season.seasoned()
-season.integrated(1)
-season.ar(2)
-season.ma(2)
-print(season.test_ac())
+season.grid_search()
+season.results_df.iloc[season.idx_min]
+
 
 ## Part 2: AR
 from statsmodels.graphics.tsaplots import plot_pacf
