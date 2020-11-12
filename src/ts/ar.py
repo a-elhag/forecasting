@@ -25,28 +25,29 @@ df_test = df_test.iloc[:, 0]
 from statsmodels.tsa.ar_model import AutoReg
 from sklearn.metrics import mean_squared_error
 
-lag_amount = 4
+lag_amount = 6
 model = AutoReg(df_train.values, lags=lag_amount)
 model_fit = model.fit()
 coef = model_fit.params
 
-train_lag1 = df_train[3:].dropna().values
-train_lag2 = df_train[2:-1].dropna().values
-train_lag3 = df_train[1:-2].dropna().values
-train_lag4 = df_train[:-3].dropna().values
+predict = np.zeros((df_train.shape[0]-lag_amount+1))
 
-predict = train_lag4*coef[4] + train_lag3*coef[3] + train_lag2*coef[2] + train_lag1*coef[1] + coef[0]
+for lag in range(1,lag_amount+1):
+    if lag == 1:
+        df_train_lag = df_train[lag_amount-1:].dropna().values
+    elif lag == lag_amount+1:
+        df_train_lag = df_train[:-lag_amount+1].dropna().values
+    else:
+        idx1 = -lag + lag_amount
+        idx2 = -lag + 1
+        df_train_lag = df_train[idx1:idx2].dropna().values
 
-predictions = model_fit.predict(
-    start = 0, end = df_train.shape[0],
-    dynamic = False)
+    predict = predict + df_train_lag*coef[lag]
 
-error = (predictions-predict).sum()
-print(error)
+predict = predict + coef[0]
+error2 = (predictions-predict).sum()
+print(error2)
 
-
-df_train[3:]
-df_train[2:-1]
 
 ## Part 2: Predictions
 predictions = model_fit.predict(
