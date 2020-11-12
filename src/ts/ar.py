@@ -30,6 +30,10 @@ model = AutoReg(df_train.values, lags=lag_amount)
 model_fit = model.fit()
 coef = model_fit.params
 
+predictions = model_fit.predict(
+    start = 0, end = df_train.shape[0],
+    dynamic = False)
+
 predict = np.zeros((df_train.shape[0]-lag_amount+1))
 
 for lag in range(1,lag_amount+1):
@@ -45,10 +49,17 @@ for lag in range(1,lag_amount+1):
     predict = predict + df_train_lag*coef[lag]
 
 predict = predict + coef[0]
-error2 = (predictions-predict).sum()
-print(error2)
 
+idx1 = (lag_amount-1)*2
+idx2 = -(lag_amount-1)
+plt.plot(predict[:idx2], label="predict")
+plt.plot(df_train.values[idx1:], label="original")
+plt.legend()
+plt.grid()
+plt.show()
 
+predict[:idx2].shape
+df_train.values[idx1:].shape
 ## Part 2: Predictions
 predictions = model_fit.predict(
     start=df_train.shape[0], end = df_train.shape[0] + df_test.shape[0] -1,
