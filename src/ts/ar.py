@@ -25,7 +25,7 @@ df_test = df_test.iloc[:, 0]
 from statsmodels.tsa.ar_model import AutoReg
 from sklearn.metrics import mean_squared_error
 
-lag_amount = 6
+lag_amount = 2
 model = AutoReg(df_train.values, lags=lag_amount)
 model_fit = model.fit()
 coef = model_fit.params
@@ -36,7 +36,13 @@ predictions = model_fit.predict(
 
 predict = np.zeros((df_train.shape[0]-lag_amount+1))
 
+predict
 for lag in range(1,lag_amount+1):
+    if lag_amount == 1:
+        df_train_lag = df_train.dropna().values
+        predict = predict + df_train_lag*coef[lag]
+        break
+
     if lag == 1:
         df_train_lag = df_train[lag_amount-1:].dropna().values
     elif lag == lag_amount+1:
@@ -49,9 +55,18 @@ for lag in range(1,lag_amount+1):
     predict = predict + df_train_lag*coef[lag]
 
 predict = predict + coef[0]
+error = (predict-predictions).sum()
+print(error)
 
-idx1 = (lag_amount-1)*2
-idx2 = -(lag_amount-1)
+if lag_amount==1:
+    rmse = np.sqrt(mean_squared_error(predict, df_train.values))
+else:
+    idx1 = (lag_amount-1)*2
+    idx2 = -(lag_amount-1)
+
+    rmse = np.sqrt(mean_squared_error(predict[:idx2], df_train.values[idx1:]))
+print(rmse)
+
 plt.plot(predict[:idx2], label="predict")
 plt.plot(df_train.values[idx1:], label="original")
 plt.legend()
@@ -60,17 +75,5 @@ plt.show()
 
 predict[:idx2].shape
 df_train.values[idx1:].shape
-## Part 2: Predictions
-predictions = model_fit.predict(
-    start=df_train.shape[0], end = df_train.shape[0] + df_test.shape[0] -1,
-    dynamic = True)
-
-rmse = np.sqrt(mean_squared_error(df_test, predictions))
-
-plt.plot(df_test.values[:1000], label="Original")
-plt.plot(predictions[:1000], label="Predictions")
-plt.grid()
-plt.legend()
-plt.show()
 
 ## Part 2: 
