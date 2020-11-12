@@ -326,22 +326,67 @@ def ac_plot(data, flag_option=1):
         )
 
 ## Part 3a: Plot 1
+fig = plt.figure()
 plt.plot(seas_opt.df_train.resample("D").mean().dropna(), label="original")
 plt.plot(seas_opt.seasoned_train.resample("D").mean().dropna(), label="seasoned")
 plt.title("Original vs Seasoned")
 plt.grid()
 plt.legend()
 plt.savefig("pics/1a_orvssea")
-
-plt.plot(seas_opt.df_train.resample("D").mean().dropna(), label="original")
-plt.plot(seas_opt.seasoned_train.resample("D").mean().dropna(), label="seasoned")
-plt.title("Original vs Seasoned")
-plt.grid()
-plt.legend()
-plt.savefig("pics/2a_orvssea")
+plt.close(fig)
 
 ## Part 3b: 
+fig, axs = plt.subplots(2)
+axs[0].set_title("Seasoned")
+axs[0].plot(seas_opt.seasoned_train.resample("D").mean().dropna())
+axs[0].grid()
+axs[1].set_title("Integrated")
+axs[1].plot(seas_opt.integrated_train.resample("D").mean().dropna())
+axs[1].grid()
+plt.tight_layout()
+plt.savefig("pics/1b_seavsint")
+plt.close(fig)
 
+## Part 3c: 
+fig = plt.figure()
+plt.plot(seas_opt.integrated_train.resample("D").mean().dropna(), label="Integrated")
+plt.plot(seas_opt.ar_train.resample("D").mean().dropna(), label="AR")
+plt.title("Integrated vs AR")
+plt.grid()
+plt.legend()
+plt.savefig("pics/1c_intvsar")
+plt.close(fig)
+
+## Part 3d: 
+fig = plt.figure()
+plt.plot(seas_opt.ar_train.resample("D").mean().dropna(), label="AR")
+plt.plot(seas_opt.ma_train.resample("D").mean().dropna(), label="MA")
+plt.title("AR vs MA")
+plt.grid()
+plt.legend()
+plt.savefig("pics/1d_arvsma")
+plt.close(fig)
+
+## Part 4a: 
+fig = plt.figure()
+pd.plotting.autocorrelation_plot(
+    seas_opt.df_train.resample("H").mean().dropna())
+plt.title("Original AutoCorrelation")
+plt.grid()
+plt.savefig("pics/2a_ac_original")
+plt.close(fig)
+
+## Part 3e: 
+fig = plt.figure()
+pd.plotting.autocorrelation_plot(
+    seas_opt.ma_train.resample("H").mean().dropna())
+plt.title("Final AutoCorrelation")
+plt.grid()
+plt.savefig("pics/2b_ac_final")
+plt.show()
+plt.close(fig)
+
+## Part
 seas_opt.df_train
 seas_opt.seasoned_train
 seas_opt.integrated_train
