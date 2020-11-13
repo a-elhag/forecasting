@@ -60,58 +60,71 @@ class SARIMA():
         self.S_year = self.S_year * self.relatives_up[:60*24*365]
 
 
-    def integrated(self, order):
-        self.order = order
-        if self.order == 0:
-            self.integrated_train = self.S.dropna()
-        if self.order == 1:
-            self.integrated_train = self.S.diff().dropna()
-        if self.order == 2:
-            self.integrated_train = self.S.diff().diff().dropna()
+    def integrated(self, v_d):
+        '''
+        Differencing the dataset
+        Perhaps in the future it would be wise to test out differencing
+        over a longer time scale. (Month 2 - Month 1)
 
-    def ar(self, lag_amount):
-        self.lag_amount = lag_amount
-        model_ar = AutoReg(self.integrated_train.values, lags=self.lag_amount)
+        v_d ==> Variable for integrated
+        '''
+
+        self.v_d = v_d
+        if self.v_d == 0:
+            self.SI = self.S.dropna()
+        if self.v_d == 1:
+            self.SI = self.S.diff().dropna()
+        if self.v_d == 2:
+            self.SI = self.S.diff().diff().dropna()
+
+    def ar(self, v_p):
+        '''
+        Taking an autoregression
+        v_p ==> Past values for autoregression
+        '''
+
+        self.v_p = v_p
+        model_ar = AutoReg(self.SI.values, lags=self.v_p)
         model_ar_fit = model_ar.fit()
-        self.coef = model_ar_fit.params
+        self.AR_coef = model_ar_fit.params
         predictions = model_ar_fit.predict(
-            start = 0, end = self.integrated_train.shape[0],
+            start = 0, end = self.SI.shape[0],
             dynamic = False)
 
-        predict = np.zeros((self.integrated_train.shape[0]-self.lag_amount+1))
+        predict = np.zeros((self.SI.shape[0]-self.v_p+1))
 
-        for lag in range(1,self.lag_amount+1):
-            if self.lag_amount == 1:
-                self.integrated_train_lag = self.integrated_train.dropna().values
-                predict = predict + self.integrated_train_lag*self.coef[lag]
+        for lag in range(1,self.v_p+1):
+            if self.v_p == 1:
+                self.SI_lag = self.SI.dropna().values
+                predict = predict + self.SI_lag*self.AR_coef[lag]
                 break
 
             if lag == 1:
-                self.integrated_train_lag = self.integrated_train[self.lag_amount-1:].dropna().values
-            elif lag == self.lag_amount+1:
-                self.integrated_train_lag = self.integrated_train[:-self.lag_amount+1].dropna().values
+                self.SI_lag = self.SI[self.v_p-1:].dropna().values
+            elif lag == self.v_p+1:
+                self.SI_lag = self.SI[:-self.v_p+1].dropna().values
             else:
-                idx1 = -lag + self.lag_amount
+                idx1 = -lag + self.v_p
                 idx2 = -lag + 1
-                self.integrated_train_lag = self.integrated_train[idx1:idx2].dropna().values
+                self.SI_lag = self.SI[idx1:idx2].dropna().values
 
-            predict = predict + self.integrated_train_lag*self.coef[lag]
+            predict = predict + self.SI_lag*self.AR_coef[lag]
 
-        predict = predict + self.coef[0]
+        predict = predict + self.AR_coef[0]
         error = (predict-predictions).sum()
 
-        if self.lag_amount==1:
-            self.rmse = np.sqrt(mean_squared_error(predict, self.integrated_train.values))
-            self.ar_train = self.integrated_train - predict
-        elif self.lag_amount==0:
-            self.rmse = np.sqrt(mean_squared_error(predict[:-1], self.integrated_train.values))
-            self.ar_train = self.integrated_train - predict[:-1]
+        if self.v_p==1:
+            self.rmse = np.sqrt(mean_squared_error(predict, self.SI.values))
+            self.ar_train = self.SI - predict
+        elif self.v_p==0:
+            self.rmse = np.sqrt(mean_squared_error(predict[:-1], self.SI.values))
+            self.ar_train = self.SI - predict[:-1]
         else:
-            idx1 = (self.lag_amount-1)*2
-            idx2 = -(self.lag_amount-1)
+            idx1 = (self.v_p-1)*2
+            idx2 = -(self.v_p-1)
 
-            self.rmse = np.sqrt(mean_squared_error(predict[:idx2], self.integrated_train.values[idx1:]))
-            self.ar_train = self.integrated_train[idx1:] - predict[:idx2]
+            self.rmse = np.sqrt(mean_squared_error(predict[:idx2], self.SI.values[idx1:]))
+            self.ar_train = self.SI[idx1:] - predict[:idx2]
 
 
     def ma(self, lag_ma_amount):
