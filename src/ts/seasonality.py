@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import signal
-
-# Stats Models
+from sklearn.metrics import mean_squared_error
 from statsmodels.regression.linear_model import OLS
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.ar_model import AutoReg
-from sklearn.metrics import mean_squared_error
 
 store = pd.HDFStore('../../data/power_clean.h5')
 df_train = store['df_train']
@@ -19,6 +17,7 @@ df_test.set_index('DateTime', inplace=True)
 
 idx = df_train.index >= '2007'
 df_train = df_train[idx]
+
 
 ## Part 1: Formatting Data
 class Season():
@@ -262,6 +261,9 @@ class Season():
             self.get_all("H", 24*7)
             self.seasoned()
 
+    def normal_search(self):
+        pass
+
     def grid_search(self):
         self.values = []
         self.keys = []
@@ -301,98 +303,8 @@ class Season():
         plt.show()
 
 
-## Part 1: After class
+## Part 2: After class
 season = Season(df_train, df_test)
 season.grid_search()
 season.results_df.iloc[season.idx_min]
-
-## Part 2: Plotting
-from statsmodels.graphics.tsaplots import plot_acf
-
-seas_opt = Season(df_train, df_test)
-seas_opt.seasonality_search(3) 
-seas_opt.integrated(1) 
-seas_opt.ar(2) 
-seas_opt.ma(2) 
-
-def ac_plot(data, flag_option=1):
-    if flag_option==1:
-        pd.plotting.autocorrelation_plot(
-            data.resample("H").mean().dropna())
-    elif flag_option==2:
-        plot_acf(
-            data.resample("H").mean().dropna(),
-            lags=10
-        )
-
-## Part 3a: Plot 1
-fig = plt.figure()
-plt.plot(seas_opt.df_train.resample("D").mean().dropna(), label="original")
-plt.plot(seas_opt.seasoned_train.resample("D").mean().dropna(), label="seasoned")
-plt.title("Original vs Seasoned")
-plt.grid()
-plt.legend()
-plt.savefig("pics/1a_orvssea")
-plt.close(fig)
-
-## Part 3b: 
-fig, axs = plt.subplots(2)
-axs[0].set_title("Seasoned")
-axs[0].plot(seas_opt.seasoned_train.resample("D").mean().dropna())
-axs[0].grid()
-axs[1].set_title("Integrated")
-axs[1].plot(seas_opt.integrated_train.resample("D").mean().dropna())
-axs[1].grid()
-plt.tight_layout()
-plt.savefig("pics/1b_seavsint")
-plt.close(fig)
-
-## Part 3c: 
-fig = plt.figure()
-plt.plot(seas_opt.integrated_train.resample("D").mean().dropna(), label="Integrated")
-plt.plot(seas_opt.ar_train.resample("D").mean().dropna(), label="AR")
-plt.title("Integrated vs AR")
-plt.grid()
-plt.legend()
-plt.savefig("pics/1c_intvsar")
-plt.close(fig)
-
-## Part 3d: 
-fig = plt.figure()
-plt.plot(seas_opt.ar_train.resample("D").mean().dropna(), label="AR")
-plt.plot(seas_opt.ma_train.resample("D").mean().dropna(), label="MA")
-plt.title("AR vs MA")
-plt.grid()
-plt.legend()
-plt.savefig("pics/1d_arvsma")
-plt.close(fig)
-
-## Part 4a: 
-fig = plt.figure()
-pd.plotting.autocorrelation_plot(
-    seas_opt.df_train.resample("H").mean().dropna())
-plt.title("Original AutoCorrelation")
-plt.grid()
-plt.savefig("pics/2a_ac_original")
-plt.close(fig)
-
-## Part 3e: 
-fig = plt.figure()
-pd.plotting.autocorrelation_plot(
-    seas_opt.ma_train.resample("H").mean().dropna())
-plt.title("Final AutoCorrelation")
-plt.grid()
-plt.savefig("pics/2b_ac_final")
-plt.show()
-plt.close(fig)
-
-## Part
-seas_opt.df_train
-seas_opt.seasoned_train
-seas_opt.integrated_train
-seas_opt.ar_train
-seas_opt.ma_train
-
-
-## Part 5: 
 
