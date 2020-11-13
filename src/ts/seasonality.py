@@ -35,7 +35,8 @@ class SARIMA():
         self.season_test = np.ones(df_test.size)
 
         self.year = np.ones(60*8760)
-        self.S = np.ones(365*24*60)
+        self.S = self.df_train.copy()
+        self.S_year = np.ones(60*24*365)
 
     def season(self, v_period):
         '''
@@ -44,91 +45,29 @@ class SARIMA():
         '''
         self.v_period = v_period
 
-    def resample(self, freq):
-        ''' Resample the dataset
-        MS ==> Month (Day 1)
-        W ==> Week
-        D ==> Day of Year
-        H ==> Hour
-        '''
-        self.freq = freq
-        self.rs_train = self.df_train.resample(self.freq).mean()
+        df_train_pad = np.pad(
+            self.df_train.values,
+            (0, self.v_period - self.df_train.shape[0]%self.v_period))
 
-    def get_idx(self):
-        '''
-        Have to subtract 1 from most of the indeces because
-        they are not zero indexed.
-        Idiots
-        '''
+        df_train_pad = df_train_pad.reshape(-1, self.v_period)
+        self.relatives = df_train_pad.mean(0)/df_train_pad.mean()
 
-        self.idx_train = {
-            "MS": self.rs_train.index.month - 1,
-            "W": pd.Int64Index(self.rs_train.index.isocalendar().week) - 1,
-            "D": self.rs_train.index.dayofyear - 1,
-            "H": self.rs_train.index.hour}
+        upsample = int(np.ceil(self.df_train.shape[0]/self.relatives.shape[0]))
+        self.relatives_up = np.tile(self.relatives, upsample)
+        self.relatives_up = self.relatives_up[:self.df_train.shape[0]]
 
-    def get_pattern(self, period):
-        self.period = period
-        self.season = np.zeros(self.period)
+        self.S = self.S/self.relatives_up
+        self.S_year = self.S_year * self.relatives_up[:60*24*365]
 
-        idx_zero = np.where((self.idx_train[self.freq].values==0))[0][0]
-        idx = np.arange(self.idx_train[self.freq].values.shape[0] - idx_zero) + idx_zero
-
-        for p in range(self.period):
-            idx_temp = idx[p::self.period]
-            self.season[p] = np.nanmean(
-                self.rs_train.iloc[idx_temp].values)
-
-
-    def get_year(self):
-        # rate = 2
-        # length = self.season.shape[0]
-        # self.year_temp = signal.resample(self.season, rate*length)
-        # self.year_temp = signal.resample_poly(self.season, rate, 1)
-
-        if self.freq == "D":
-            time_repeat = int(np.ceil(60*8760/self.period))
-            self.year_temp = np.repeat(self.season, time_repeat)
-
-        if self.freq == "H":
-            time_repeat = 60
-            self.year_temp = np.repeat(self.season, time_repeat)
-            time_tile = int(np.ceil(8760/self.period))
-            self.year_temp = np.tile(self.year_temp, time_tile)
-
-        self.year_temp = self.year_temp[:60*8760]
-        self.year = self.year[:60*8760]*self.year_temp
-
-    def get_all(self, freq, period):
-        self.resample(freq)
-        self.get_idx()
-        self.get_pattern(period)
-        self.get_year()
-
-
-    def seasoned(self):
-        self.year = np.tile(self.year, 2)
-        self.seasoned_train1 = self.df_train['2007']/self.year[:self.df_train['2007'].shape[0]]
-        # self.seasoned_train1 = self.seasoned_train1 - self.df_train['2007']
-
-        self.seasoned_train2 = self.df_train['2008']/self.year[:self.df_train['2008'].shape[0]]
-        # self.seasoned_train2 = self.seasoned_train2 - self.df_train['2008']
-
-        self.seasoned_train3 = self.df_train['2009']/self.year[:self.df_train['2009'].shape[0]]
-        # self.seasoned_train3 = self.seasoned_train3 - self.df_train['2009']
-
-        self.seasoned_train = pd.concat([self.seasoned_train1,
-                                          self.seasoned_train2,
-                                          self.seasoned_train3])
 
     def integrated(self, order):
         self.order = order
         if self.order == 0:
-            self.integrated_train = self.seasoned_train.dropna()
+            self.integrated_train = self.S.dropna()
         if self.order == 1:
-            self.integrated_train = self.seasoned_train.diff().dropna()
+            self.integrated_train = self.S.diff().dropna()
         if self.order == 2:
-            self.integrated_train = self.seasoned_train.diff().diff().dropna()
+            self.integrated_train = self.S.diff().diff().dropna()
 
     def ar(self, lag_amount):
         self.lag_amount = lag_amount
@@ -241,38 +180,28 @@ class SARIMA():
 
         if self.order_season == 0:
             self.tag_season = "Nothing"
-            self.seasoned()
         elif self.order_season == 1:
             self.tag_season = "D:365"
-            self.get_all("D", 365)
-            self.seasoned()
+            self.season(60*24*365)
         elif self.order_season == 2:
             self.tag_season = "H:24"
-            self.get_all("H", 24)
-            self.seasoned()
+            self.season(60*24)
         elif self.order_season == 3:
             self.tag_season = "H:24*7"
-            self.get_all("H", 24*7)
-            self.seasoned()
+            self.season(60*24*7)
         elif self.order_season == 4:
             self.tag_season = "D:365 + H:24"
-            self.get_all("D", 365)
-            self.get_all("H", 24)
-            self.seasoned()
+            self.season(60*24*365)
+            self.season(60*24)
         elif self.order_season == 5:
             self.tag_season = "D:365 + H:24*7"
-            self.get_all("D", 365)
-            self.get_all("H", 24*7)
-            self.seasoned()
+            self.season(60*24*365)
+            self.season(60*24*7)
         elif self.order_season == 6:
             self.tag_season = "D:365 + H:24 + H:24*7"
-            self.get_all("D", 365)
-            self.get_all("H", 24)
-            self.get_all("H", 24*7)
-            self.seasoned()
-
-    def normal_search(self):
-        pass
+            self.season(60*24*365)
+            self.season(60*24*7)
+            self.season(60*24)
 
     def grid_search(self):
         self.values = []
@@ -312,34 +241,8 @@ class SARIMA():
             self.ma_train.resample("H").mean().dropna())
         plt.show()
 
- 
-## Part 2: After class
+## Part 2: Testing
 sarima = SARIMA(df_train, df_test)
-train = sarima.df_train
+sarima.grid_search()
+ 
 
-periods = 60*24*7*4
-
-train_pad = np.pad(train.values, (0, periods - train.shape[0]%periods))
-train_pad = train_pad.reshape(-1, periods)
-relatives = train_pad.mean(0)/train_pad.mean()
-
-upsample = int(np.ceil(train.shape[0]/relatives.shape[0]))
-relatives_up = np.tile(relatives, upsample)
-relatives_up = relatives_up[:train.shape[0]]
-
-deseasoned = train.values/relatives_up
-
-plt.plot(relatives)
-plt.show()
-
-## Plots
-fig, axs = plt.subplots(3)
-axs[0].set_title('original')
-axs[0].plot(train.values)
-axs[1].set_title('deseasoned')
-axs[1].plot(train.values/relatives_up)
-axs[2].set_title('relatives')
-axs[2].plot(relatives_up)
-plt.grid()
-plt.tight_layout()
-plt.show()
