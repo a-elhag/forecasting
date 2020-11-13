@@ -18,21 +18,31 @@ df_test.set_index('DateTime', inplace=True)
 idx = df_train.index >= '2007'
 df_train = df_train[idx]
 
+df_train = df_train.iloc[:,0]
+df_test = df_test.iloc[:,0]
 
 ## Part 1: Formatting Data
-class Season():
+class SARIMA():
     '''
     This is a class to remove the seasonality from the input data
     set
     '''
     def __init__(self, df_train, df_test):
-        self.df_train = df_train.iloc[:,0]
-        self.df_test = df_test.iloc[:,0]
+        self.df_train = df_train
+        self.df_test = df_test
 
         self.season_train = np.ones(df_train.size)
         self.season_test = np.ones(df_test.size)
 
         self.year = np.ones(60*8760)
+        self.S = np.ones(365*24*60)
+
+    def season(self, v_period):
+        '''
+        Remove seasonality from the dataset
+        v_period ==> Variable for seasonality
+        '''
+        self.v_period = v_period
 
     def resample(self, freq):
         ''' Resample the dataset
@@ -302,9 +312,34 @@ class Season():
             self.ma_train.resample("H").mean().dropna())
         plt.show()
 
-
+ 
 ## Part 2: After class
-season = Season(df_train, df_test)
-season.grid_search()
-season.results_df.iloc[season.idx_min]
+sarima = SARIMA(df_train, df_test)
+train = sarima.df_train
 
+periods = 60*24*7*4
+
+train_pad = np.pad(train.values, (0, periods - train.shape[0]%periods))
+train_pad = train_pad.reshape(-1, periods)
+relatives = train_pad.mean(0)/train_pad.mean()
+
+upsample = int(np.ceil(train.shape[0]/relatives.shape[0]))
+relatives_up = np.tile(relatives, upsample)
+relatives_up = relatives_up[:train.shape[0]]
+
+deseasoned = train.values/relatives_up
+
+plt.plot(relatives)
+plt.show()
+
+## Plots
+fig, axs = plt.subplots(3)
+axs[0].set_title('original')
+axs[0].plot(train.values)
+axs[1].set_title('deseasoned')
+axs[1].plot(train.values/relatives_up)
+axs[2].set_title('relatives')
+axs[2].plot(relatives_up)
+plt.grid()
+plt.tight_layout()
+plt.show()
